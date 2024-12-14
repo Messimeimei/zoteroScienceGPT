@@ -8,6 +8,9 @@ import {
 import { getString, initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
+import { registerSidebarIcon } from "./modules/sideBarChat";  // 导入注册侧边栏聊天模块
+import { ZoteroFileHandler } from "./modules/fileOperations";
+
 
 async function onStartup() {
   await Promise.all([
@@ -20,9 +23,9 @@ async function onStartup() {
 
   BasicExampleFactory.registerPrefs();
 
-  BasicExampleFactory.registerNotifier();
+  // BasicExampleFactory.registerNotifier();
 
-  KeyExampleFactory.registerShortcuts();
+  // KeyExampleFactory.registerShortcuts();
 
   await UIExampleFactory.registerExtraColumn();
 
@@ -30,7 +33,9 @@ async function onStartup() {
 
   UIExampleFactory.registerItemPaneCustomInfoRow();
 
-  UIExampleFactory.registerItemPaneSection();
+  // UIExampleFactory.registerItemPaneSection(); // 原有的注册侧边栏图标代码
+
+  registerSidebarIcon();  // 注册侧边栏聊天图标
 
   UIExampleFactory.registerReaderItemPaneSection();
 
@@ -87,7 +92,8 @@ async function onMainWindowLoad(win: Window): Promise<void> {
   });
   popupWin.startCloseTimer(5000);
 
-  addon.hooks.onDialogEvents("dialogExample");
+  // addon.hooks.onDialogEvents("dialogExample");
+
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {

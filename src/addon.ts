@@ -8,7 +8,6 @@ class Addon {
   public data: {
     alive: boolean;
     config: typeof config;
-    // Env type, see build.js
     env: "development" | "production";
     ztoolkit: ZToolkit;
     locale?: {
@@ -21,9 +20,7 @@ class Addon {
     };
     dialog?: DialogHelper;
   };
-  // Lifecycle hooks
   public hooks: typeof hooks;
-  // APIs
   public api: object;
 
   constructor() {
@@ -36,6 +33,8 @@ class Addon {
     this.hooks = hooks;
     this.api = {};
   }
+
+
 }
 
 export default Addon;

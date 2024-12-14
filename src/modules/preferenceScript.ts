@@ -2,9 +2,9 @@ import { config } from "../../package.json";
 import { getString } from "../utils/locale";
 
 export async function registerPrefsScripts(_window: Window) {
-  // This function is called when the prefs window is opened
-  // See addon/content/preferences.xhtml onpaneload
+  // 初始化偏好设置
   if (!addon.data.prefs) {
+    // 表格列的设置
     addon.data.prefs = {
       window: _window,
       columns: [
@@ -19,6 +19,7 @@ export async function registerPrefsScripts(_window: Window) {
           label: getString("prefs-table-detail"),
         },
       ],
+      // 表格行的具体内容
       rows: [
         {
           title: "Orange",
@@ -37,22 +38,22 @@ export async function registerPrefsScripts(_window: Window) {
   } else {
     addon.data.prefs.window = _window;
   }
+  // 更新UI和绑定事件
   updatePrefsUI();
   bindPrefEvents();
 }
 
 async function updatePrefsUI() {
-  // You can initialize some UI elements on prefs window
-  // with addon.data.prefs.window.document
-  // Or bind some events to the elements
   const renderLock = ztoolkit.getGlobal("Zotero").Promise.defer();
   if (addon.data.prefs?.window == undefined) return;
+  // 创建虚拟化表格
   const tableHelper = new ztoolkit.VirtualizedTable(addon.data.prefs?.window)
     .setContainerId(`${config.addonRef}-table-container`)
     .setProp({
       id: `${config.addonRef}-prefs-table`,
       // Do not use setLocale, as it modifies the Zotero.Intl.strings
       // Set locales directly to columns
+      // 表格属性配置
       columns: addon.data.prefs?.columns,
       showHeader: true,
       multiSelect: true,

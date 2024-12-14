@@ -13,7 +13,7 @@ function example(
     } catch (e) {
       ztoolkit.log(`Error in example ${target.name}.${String(propertyKey)}`, e);
       throw e;
-    }
+    } 
   };
   return descriptor;
 }
@@ -135,9 +135,10 @@ export class UIExampleFactory {
     doc.getElementById("zotero-item-pane-content")?.classList.add("makeItRed");
   }
 
+  // 注册右键菜单的可点击，名称是ScienceGPT
   @example
   static registerRightClickMenuItem() {
-    const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon@0.5x.png`;
+    const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/chat.png`;
     // item menuitem with icon
     ztoolkit.Menu.register("item", {
       tag: "menuitem",
@@ -148,6 +149,7 @@ export class UIExampleFactory {
     });
   }
 
+  // 注册右键菜单的子菜单
   @example
   static registerRightClickMenuPopup(win: Window) {
     ztoolkit.Menu.register(
@@ -159,7 +161,7 @@ export class UIExampleFactory {
           {
             tag: "menuitem",
             label: getString("menuitem-submenulabel"),
-            oncommand: "alert('Hello World! Sub Menuitem.')",
+            oncommand: "alert('如何弹出右键菜单的子菜单，已经拿捏！')",
           },
         ],
       },
@@ -170,16 +172,16 @@ export class UIExampleFactory {
     );
   }
 
+  // 点击文件按钮后，在文件下面的列表中添加一个新的按钮
   @example
   static registerWindowMenuWithSeparator() {
     ztoolkit.Menu.register("menuFile", {
       tag: "menuseparator",
     });
-    // menu->File menuitem
     ztoolkit.Menu.register("menuFile", {
       tag: "menuitem",
       label: getString("menuitem-filemenulabel"),
-      oncommand: "alert('Hello World! File Menuitem.')",
+      oncommand: "alert('在文件按钮添加新的操作已经拿捏!')",
     });
   }
 
@@ -240,6 +242,7 @@ export class UIExampleFactory {
     });
   }
 
+  // 注册侧边栏的聊天图标
   @example
   static registerItemPaneSection() {
     Zotero.ItemPaneManager.registerSection({
@@ -251,7 +254,7 @@ export class UIExampleFactory {
       },
       sidenav: {
         l10nID: getLocaleID("item-section-example1-sidenav-tooltip"),
-        icon: "chrome://zotero/skin/20/universal/save.svg",
+        icon: `chrome://${addon.data.config.addonRef}/content/icons/chat.png`,
       },
       onRender: ({ body, item, editable, tabType }) => {
         body.textContent = JSON.stringify({
