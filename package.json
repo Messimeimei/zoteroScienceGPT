@@ -8,7 +8,8 @@
     "addonRef": "zoteroScienceGPT",
     "addonInstance": "ZoteroScienceGPT",
     "prefsPrefix": "extensions.zotero.zoteroScienceGPT",
-    "apiKey": "app-0iEIjLMv2u2UkDvArDf9OEv7"
+    "apiKey": "app-TddVScoJ1uJMs6zvnCsT6wkg",
+    "abstractionApiKey": "app-kb2fHnC7qG0GZv7CNBmlsHQ8"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,8 @@
     "update-deps": "npm update --save"
   },
   "dependencies": {
+    "abort-controller": "^3.0.0",
+    "axios": "^1.7.9",
     "marked": "^15.0.3",
     "zotero-plugin-toolkit": "^4.0.11"
   },

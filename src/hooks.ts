@@ -21,6 +21,8 @@ async function onStartup() {
 
   initLocale();
 
+  ZoteroFileHandler.createUserData();   // 创建存储用户数据的文件夹
+
   BasicExampleFactory.registerPrefs();
 
   // BasicExampleFactory.registerNotifier();
@@ -37,7 +39,10 @@ async function onStartup() {
 
   registerSidebarIcon();  // 注册侧边栏聊天图标
 
-  UIExampleFactory.registerReaderItemPaneSection();
+  ZoteroFileHandler.registerItemListener(); // 测试一下文件api
+
+  // UIExampleFactory.registerReaderItemPaneSection(); // 原有的提示item被选中
+
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -45,10 +50,8 @@ async function onStartup() {
 }
 
 async function onMainWindowLoad(win: Window): Promise<void> {
-  // Create ztoolkit for every window
   addon.data.ztoolkit = createZToolkit();
 
-  // @ts-ignore This is a moz feature
   win.MozXULElement.insertFTLIfNeeded(
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
@@ -70,9 +73,14 @@ async function onMainWindowLoad(win: Window): Promise<void> {
     text: `[30%] ${getString("startup-begin")}`,
   });
 
-  UIExampleFactory.registerStyleSheet(win);
+  ZoteroFileHandler.topicAbstract();
 
-  UIExampleFactory.registerRightClickMenuItem();
+  // UIExampleFactory.registerRightClickMenuItem(); // 原来的注册右键功能
+  ZoteroFileHandler.registerFolderClassification();
+
+  // // 原来注册样式表的代码
+  // UIExampleFactory.registerStyleSheet(win);
+
 
   UIExampleFactory.registerRightClickMenuPopup(win);
 
@@ -177,6 +185,9 @@ function onDialogEvents(type: string) {
       break;
     case "vtableExample":
       HelperExampleFactory.vtableExample();
+      break;
+    case "classification":
+      ZoteroFileHandler.showClassificationDialog();
       break;
     default:
       break;

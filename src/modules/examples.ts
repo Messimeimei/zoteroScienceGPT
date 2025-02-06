@@ -13,7 +13,7 @@ function example(
     } catch (e) {
       ztoolkit.log(`Error in example ${target.name}.${String(propertyKey)}`, e);
       throw e;
-    } 
+    }
   };
   return descriptor;
 }
@@ -133,6 +133,7 @@ export class UIExampleFactory {
     });
     doc.documentElement.appendChild(styles);
     doc.getElementById("zotero-item-pane-content")?.classList.add("makeItRed");
+    ztoolkit.log("设置绿色成功！")
   }
 
   // 注册右键菜单的可点击，名称是ScienceGPT
@@ -266,6 +267,7 @@ export class UIExampleFactory {
     });
   }
 
+  // 注册选中条目时候的操作
   @example
   static async registerReaderItemPaneSection() {
     Zotero.ItemPaneManager.registerSection({
