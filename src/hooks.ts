@@ -10,6 +10,7 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 import { registerSidebarIcon } from "./modules/sideBarChat";  // 导入注册侧边栏聊天模块
 import { ZoteroFileHandler } from "./modules/fileOperations";
+import { registerPDFListener} from "./modules/pdfReader";
 
 
 async function onStartup() {
@@ -20,6 +21,8 @@ async function onStartup() {
   ]);
 
   initLocale();
+
+  registerPDFListener();
 
   ZoteroFileHandler.createUserData();   // 创建存储用户数据的文件夹
 
@@ -39,7 +42,7 @@ async function onStartup() {
 
   registerSidebarIcon();  // 注册侧边栏聊天图标
 
-  ZoteroFileHandler.registerItemListener(); // 测试一下文件api
+  ZoteroFileHandler.registerItemListener(); // 实时检测文件操作
 
   // UIExampleFactory.registerReaderItemPaneSection(); // 原有的提示item被选中
 
@@ -81,7 +84,6 @@ async function onMainWindowLoad(win: Window): Promise<void> {
   // // 原来注册样式表的代码
   // UIExampleFactory.registerStyleSheet(win);
 
-
   UIExampleFactory.registerRightClickMenuPopup(win);
 
   UIExampleFactory.registerWindowMenuWithSeparator();
@@ -115,6 +117,7 @@ function onShutdown(): void {
   // Remove addon object
   addon.data.alive = false;
   delete Zotero[addon.data.config.addonInstance];
+  
 }
 
 /**

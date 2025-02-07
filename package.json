@@ -9,7 +9,8 @@
     "addonInstance": "ZoteroScienceGPT",
     "prefsPrefix": "extensions.zotero.zoteroScienceGPT",
     "apiKey": "app-TddVScoJ1uJMs6zvnCsT6wkg",
-    "abstractionApiKey": "app-kb2fHnC7qG0GZv7CNBmlsHQ8"
+    "abstractionApiKey": "app-kb2fHnC7qG0GZv7CNBmlsHQ8",
+    "singleConversationKey": "app-8HDrwLAOUbF603jq3k16md5w"
   },
   "repository": {
     "type": "git",
@@ -33,11 +34,14 @@
     "abort-controller": "^3.0.0",
     "axios": "^1.7.9",
     "marked": "^15.0.3",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.10.38",
     "zotero-plugin-toolkit": "^4.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@types/node": "^22.10.1",
+    "@types/pdfjs-dist": "^2.10.377",
     "eslint": "^9.15.0",
     "prettier": "^3.4.1",
     "typescript": "^5.7.2",

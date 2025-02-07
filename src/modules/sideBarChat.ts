@@ -186,12 +186,14 @@ export function extractStreamData(reader: any) {
   const answerRegex = /"answer":\s?"(.*?)"/g;
 
   messageParts.forEach((part: any) => {
-    // 去除 'data:' 部分
+    ztoolkit.log("去除 'data:' 部分完成")
     if (part.startsWith("data:")) {
       part = part.substring(5).trim();  // 去掉前面的 'data:' 和空格
     } else { // 不是data开头直接结束
       return;
     }
+
+    ztoolkit.log("去掉data后结果：",messageParts)
 
     // 尝试解析为 JSON
     try {
@@ -199,14 +201,14 @@ export function extractStreamData(reader: any) {
       if (jsonData.event) {
         const event = jsonData.event;
 
-        // 如果 event 是 'message_end'，则停止拼接
+        // 如果 event 是 'message_end'，则停止拼接，跳出当前循环
         if (event === 'message_end') {
           ztoolkit.log("检测到 message_end，停止拼接");
-          return; // 跳出当前循环
+          return; 
         }
 
         // 如果 event 是 'agent_message'，则拼接 answer
-        if (event === 'agent_message' && jsonData.answer) {
+        if ((event === 'agent_message' || event === 'message') && jsonData.answer) {
           const answer = jsonData.answer;
           ztoolkit.log("每一个answer:", answer);
           fullAnswer += answer;
@@ -329,6 +331,50 @@ export async function sendMessageToAbstractionAPI(message: any, metaData: any): 
     const response = await axios.post('https://api.dify.ai/v1/chat-messages', data, {
       headers: {
         'Authorization': `Bearer ${config.abstractionApiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const decoder = new TextDecoder('utf-8');
+
+    return { response, decoder }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      ztoolkit.log('Axios 错误:', error.response?.data || error.message);
+      ztoolkit.log('响应状态码:', error.response?.status);
+      ztoolkit.log('请求配置:', error.config);
+    } else {
+      ztoolkit.log('未知错误:', error);
+    }
+    return undefined
+  }
+}
+
+
+// 单篇文献理解API
+export async function sendMessageToSingleConversationAPI(message:any, selectedText: any, wholeText: any): Promise<SendMessageResponse | undefined> {
+  // 基于多篇文献元数据对文献进行主题摘要，并返回内容
+    ztoolkit.log('查看用户提问：', message)
+    ztoolkit.log('查看选中内容：', selectedText)
+    ztoolkit.log('查看pdf全文：', wholeText)
+    // 拼接 用户输入和相关元数据
+    wholeText = `用户提问：${message}\n
+               选中内容：${selectedText}\n
+               PDF全文（上下文背景）：${wholeText}`;
+
+  ztoolkit.log("查看最后的message：", wholeText)
+
+  const data = {
+    "inputs": {},
+    "query": wholeText,
+    "response_mode": 'streaming',
+    "conversation_id": '',
+    "user": "杨鑫"
+  };
+  try {
+    const response = await axios.post('https://api.dify.ai/v1/chat-messages', data, {
+      headers: {
+        'Authorization': `Bearer ${config.singleConversationKey}`,
         'Content-Type': 'application/json'
       }
     });

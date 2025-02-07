@@ -139,9 +139,10 @@ export class ZoteroFileHandler {
         "websiteTitle",
         "id",
         "year",
+        "annotation"
     ];
 
-    // 根据条目 ID 获取条目信息
+    // 根据条目 ID 获取条目信息 
     static async getItemInfoById(itemId: number) {
         try {
             const item = Zotero.Items.get(itemId);
@@ -157,6 +158,31 @@ export class ZoteroFileHandler {
                 return itemData;
             } else {
                 ztoolkit.log(`未找到ID为 ${itemId} 的条目`);
+                return null;
+            }
+        } catch (error) {
+            ztoolkit.log(`获取ID为 ${itemId} 的条目信息时出错`, error);
+            return null;
+        }
+    }
+
+    // 根据PDF ID 获取全文 
+    static async getPdfInfoById(itemId: number) {
+        try {
+            const item = Zotero.Items.get(itemId);
+            // 判断附件是否存在
+            if (item) {
+                const isPdf = item.isPDFAttachment();
+                // 判断是不是pdf
+                if (isPdf) {
+                    const itemData = await item.attachmentText;
+                    ztoolkit.log("获取的PDF文本内容：", itemData); // 添加调试日志
+                    return itemData;
+                } else {
+                    return null;
+                }
+            } else {
+                ztoolkit.log(`未找到ID为 ${itemId} 的pdf`);
                 return null;
             }
         } catch (error) {
@@ -748,10 +774,8 @@ export class ZoteroFileHandler {
         // 新增：立即调用 onCollectionSelected 展示当前选中集合的内容
         activePane.onCollectionSelected();
     }
-}   
-
-
-
+    }   
+    
     // 判断是否为 Markdown 格式的函数
     static isMarkdown(content: string): boolean {
         // 检查是否包含常见的Markdown符号，有一个符合就用markdown展示
