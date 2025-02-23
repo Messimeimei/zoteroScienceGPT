@@ -111,7 +111,7 @@ export function registerSidebarIcon() {
           // 获取完整数据并判断是否为 'True'
           try {
             ztoolkit.log("已经发送用户输入内容：", message)
-            const result = await sendMessageToClassficationAPI(message, true, itemData, allItemData);
+            const result = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
             // 第一次发送数据得到回复
             if (result && result.decoder) {
               const { response, decoder } = result;
@@ -120,7 +120,7 @@ export function registerSidebarIcon() {
               if (responseText === 'True') {
                 ztoolkit.log("需要额外信息，重新发送数据");
                 // 发送带有额外信息的数据
-                const newResult = await sendMessageToClassficationAPI(message, true, itemData, allItemData);
+                const newResult = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
                 // 第二次发送数据得到回复
                 if (newResult && newResult.decoder) {
                   const { response: newResponse, decoder: newDecoder } = result;
@@ -375,6 +375,56 @@ export async function sendMessageToSingleConversationAPI(message:any, selectedTe
     const response = await axios.post('https://api.dify.ai/v1/chat-messages', data, {
       headers: {
         'Authorization': `Bearer ${config.singleConversationKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const decoder = new TextDecoder('utf-8');
+
+    return { response, decoder }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      ztoolkit.log('Axios 错误:', error.response?.data || error.message);
+      ztoolkit.log('响应状态码:', error.response?.status);
+      ztoolkit.log('请求配置:', error.config);
+    } else {
+      ztoolkit.log('未知错误:', error);
+    }
+    return undefined
+  }
+}
+
+// 整体文献摘要API
+export async function sendMessageToWholeAspectUnderstandingAPI(message: any, metaData: any, allMetaData:any): Promise<SendMessageResponse | undefined> {
+  // 对选中的单篇文献或整体文件夹的文献进行提问
+    if (typeof metaData === 'object') {
+      metaData = JSON.stringify(metaData);
+    }
+
+    if (typeof allMetaData === 'object') {
+      allMetaData = JSON.stringify(allMetaData);
+    }
+
+    ztoolkit.log('查看多个文献元数据：', allMetaData)
+    // 拼接用户输入和相关元数据
+    message = `
+               ${message}\n
+               当前选中文献元数据:${metaData}\n
+               当前选中文件夹所有文献元数据:${allMetaData}\n`;
+
+  ztoolkit.log("查看最后的message：", message)
+
+  const data = {
+    "inputs": {},
+    "query": message,
+    "response_mode": 'streaming',
+    "conversation_id": '',
+    "user": "杨鑫"
+  };
+  try {
+    const response = await axios.post('https://api.dify.ai/v1/chat-messages', data, {
+      headers: {
+        'Authorization': `Bearer ${config.wholeAspectUnderstandingKey}`,
         'Content-Type': 'application/json'
       }
     });
