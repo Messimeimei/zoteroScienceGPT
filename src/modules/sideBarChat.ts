@@ -1,4 +1,5 @@
 
+import { it } from "node:test";
 import { config } from "../../package.json";
 import { getLocaleID, getString } from "../utils/locale";
 import { ZoteroFileHandler } from "./fileOperations";
@@ -36,35 +37,78 @@ export function registerSidebarIcon() {
       const chatContainer = Zotero.getMainWindow().document.createElement('div');
       chatContainer.id = "zotero-chat-container";
       chatContainer.style.cssText =
-        "width: 100%; height: 100%; display: flex; flex-direction: column; background-color: white; overflow: hidden; userSelect:text;";
+        "width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; userSelect:text;";
 
       const chatContent = Zotero.getMainWindow().document.createElement('div');
       chatContent.id = "chat-content";
       chatContent.style.cssText =
-        "flex: 1; overflow-y: auto; padding: 10px; background-color: white; min-height: 600px; userSelect:text;";
+        "flex: 1; overflow-y: auto; padding: 10px; background-color: #232627; min-height: 600px; userSelect:text;";
 
       const inputArea = Zotero.getMainWindow().document.createElement('div');
       inputArea.style.cssText =
-        "background-color: #f9f9f9; flex-shrink: 0; display: flex; align-items: center; userSelect:text;";
+        "background-color: #232627; flex-shrink: 0; display: flex; align-items: center; justify-content: center; userSelect:text; position: relative; height: 10%; bottom: 5%";
 
       const inputWrapper = Zotero.getMainWindow().document.createElement('div');
-      inputWrapper.style.cssText = "position: relative; flex: 1; height: 60px; userSelect:text;";
+      inputWrapper.style.cssText = `
+        position: absolute;
+        bottom: 80%;
+        left: 2%;
+        right: 2%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 96%; /* 100% - 5% left - 5% right */
+        height: 30px;
+      `;
 
       const textInput = Zotero.getMainWindow().document.createElement('textarea');
-      textInput.style.cssText =
-        "width: 100%; height: 100%; resize: none; border: 1px solid #ccc; border-radius: 4px; padding: 5px 40px 5px 10px; background-color: #ccc; userSelect:text;";
+      textInput.style.cssText = `
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        color: #ffffff;
+        width: 80%;
+        height: 100%;
+        resize: none;
+        border: 3px solid rgb(65, 67, 68);
+        border-radius: 4px;
+        padding: 5px 40px 5px 10px;
+        background-color: #232627;
+        user-select: text;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 10px;
+      `;
+      const sendButton = Zotero.getMainWindow().document.createElement('div');
+      sendButton.innerHTML = '&#x27A4;';
+      sendButton.style.cssText = `
+        position: absolute;
+        top: 50%;
+        right: 6%;
+        transform: translateY(-50%);
+        width: 30px; // 调整宽度以适应图标
+        height: 30px; // 调整高度以适应图标
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px; // 调整字体大小以适应图标
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: transparent; // 确保背景透明
+        color: #808080; // 设置图标颜色为灰色
+        user-select: none; // 防止用户选择文本
+      `;
 
-      const sendButton = Zotero.getMainWindow().document.createElement('button');
-      sendButton.innerHTML = '▲';
-      sendButton.style.cssText =
-        "position: absolute; top: 65%; right: 10px; transform: translateY(-50%); width: 30px; height: 30px; background-color: #ccc; border: none; border-radius: 50%; cursor: not-allowed; font-size: 12px; display: flex; align-items: center; justify-content: center;";
+      // 添加点击事件
+      sendButton.addEventListener('click', () => {
+        sendMessage(); // 调用发送消息的函数
+      });
 
       const updateButtonState = () => {
         if (textInput.value.trim() === '') {
-          sendButton.style.backgroundColor = '#ccc';
           sendButton.style.cursor = 'not-allowed';
         } else {
-          sendButton.style.backgroundColor = '#4CAF50';
           sendButton.style.cursor = 'pointer';
         }
       };
@@ -76,6 +120,7 @@ export function registerSidebarIcon() {
       ZoteroFileHandler.getItemDataCallback = (itemDataReceived) => {
         itemData = itemDataReceived; // 存储从 Zotero 获取的数据
       };
+      ztoolkit.log('对话应用查看回调：', itemData);
       ZoteroFileHandler.getAllItemDataCallback = (allItemDataReceived) => {
         allItemData = allItemDataReceived;
       }
@@ -89,7 +134,7 @@ export function registerSidebarIcon() {
           messageDiv.textContent = message;
           textInput.innerHTML = '';
           messageDiv.style.cssText =
-            "padding: 10px; margin-bottom: 10px; background-color: #e6e6e6; border-radius: 4px; userSelect:text;";
+            "font-family: Arial, sans-serif; font-size: 12px; color: #ffffff; padding: 10px; margin-bottom: 10px; background-color: #2b2f30; border-radius: 4px; user-select: text;";
           chatContent.appendChild(messageDiv);
           chatContent.scrollTop = chatContent.scrollHeight;
 
@@ -98,14 +143,15 @@ export function registerSidebarIcon() {
           responseDiv.style.cssText = `
             padding: 10px;
             margin-bottom: 10px;
-            background-color: #d4edda;
+            background-color: #141718;
             border-radius: 4px;
             white-space: pre-wrap;
             word-wrap: break-word;
-            max-width: 90%;
             overflow-wrap: anywhere;
-            userSelect:text;
+            font-family: Arial, sans-serif; font-size: 12px; color: #ffffff;
+            user-select:text;
         `;
+          responseDiv.innerHTML = '等待回答中^_^...';
           chatContent.appendChild(responseDiv);
 
           // 获取完整数据并判断是否为 'True'
@@ -350,7 +396,6 @@ export async function sendMessageToAbstractionAPI(message: any, metaData: any): 
   }
 }
 
-
 // 单篇文献理解API
 export async function sendMessageToSingleConversationAPI(message: any, selectedText: any, wholeText: any): Promise<SendMessageResponse | undefined> {
   // 基于多篇文献元数据对文献进行主题摘要，并返回内容
@@ -444,3 +489,47 @@ export async function sendMessageToWholeAspectUnderstandingAPI(message: any, met
   }
 }
 
+// 文献笔记生成API
+export async function sendMessageToNoterAPI(message: any, metaData: any, wholeText: any): Promise<SendMessageResponse | undefined> {
+  // 为单篇文献生成阅读笔记
+  if (typeof metaData === 'object') {
+    metaData = JSON.stringify(metaData);
+  }
+
+  ztoolkit.log('查看单篇文献元数据：', metaData)
+  message = `
+               ${message}\n
+              文献元数据是： ${metaData}
+              文献全文是： ${wholeText}`;
+
+  ztoolkit.log("查看最后的message：", message)
+
+  const data = {
+    "inputs": {},
+    "query": message,
+    "response_mode": 'streaming',
+    "conversation_id": '',
+    "user": "杨鑫"
+  };
+  try {
+    const response = await axios.post('https://api.dify.ai/v1/chat-messages', data, {
+      headers: {
+        'Authorization': `Bearer ${config.noteKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const decoder = new TextDecoder('utf-8');
+
+    return { response, decoder }
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      ztoolkit.log('Axios 错误:', error.response?.data || error.message);
+      ztoolkit.log('响应状态码:', error.response?.status);
+      ztoolkit.log('请求配置:', error.config);
+    } else {
+      ztoolkit.log('未知错误:', error);
+    }
+    return undefined
+  }
+}

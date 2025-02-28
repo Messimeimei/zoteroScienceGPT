@@ -10,7 +10,7 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 import { registerSidebarIcon } from "./modules/sideBarChat";  // 导入注册侧边栏聊天模块
 import { ZoteroFileHandler } from "./modules/fileOperations";
-import { registerPDFListener} from "./modules/pdfReader";
+import { registerPDFListener } from "./modules/pdfReader";
 
 
 async function onStartup() {
@@ -59,6 +59,7 @@ async function onMainWindowLoad(win: Window): Promise<void> {
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
+  // 插件启动提示
   const popupWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
     closeOnClick: true,
     closeTime: -1,
@@ -77,16 +78,16 @@ async function onMainWindowLoad(win: Window): Promise<void> {
   });
 
   ZoteroFileHandler.topicAbstract();
+  ZoteroFileHandler.registerFolderClassification();
+  ZoteroFileHandler.registerFolderClassificationTest();
 
   // UIExampleFactory.registerRightClickMenuItem(); // 原来的注册右键功能
-  ZoteroFileHandler.registerFolderClassification();
-
-  // // 原来注册样式表的代码
+  // // 原来注册样式表, 右键子菜单、文件窗口菜单的代码
   // UIExampleFactory.registerStyleSheet(win);
 
-  UIExampleFactory.registerRightClickMenuPopup(win);
+  // UIExampleFactory.registerRightClickMenuPopup(win);
 
-  UIExampleFactory.registerWindowMenuWithSeparator();
+  // UIExampleFactory.registerWindowMenuWithSeparator();
 
   PromptExampleFactory.registerNormalCommandExample();
 
@@ -117,7 +118,7 @@ function onShutdown(): void {
   // Remove addon object
   addon.data.alive = false;
   delete Zotero[addon.data.config.addonInstance];
-  
+
 }
 
 /**
@@ -191,6 +192,9 @@ function onDialogEvents(type: string) {
       break;
     case "classification":
       ZoteroFileHandler.showClassificationDialog();
+      break;
+    case "downloadNote":
+      ZoteroFileHandler.downloadNoterDialog();
       break;
     default:
       break;

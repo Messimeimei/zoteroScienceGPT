@@ -1,6 +1,7 @@
 startup-begin = 插件加载中
 startup-finish = 插件已就绪
-menuitem-label = 重新分类当前文件夹
+menuitem-label = 文件整理
+abstract-label = 生成阅读笔记
 menupopup-label = 插件模板: 弹出菜单
 menuitem-submenulabel = 插件模板：子菜单
 menuitem-filemenulabel = 添加新的文件功能

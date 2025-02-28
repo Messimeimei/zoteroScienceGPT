@@ -11,7 +11,8 @@
     "apiKey": "app-TddVScoJ1uJMs6zvnCsT6wkg",
     "abstractionApiKey": "app-kb2fHnC7qG0GZv7CNBmlsHQ8",
     "singleConversationKey": "app-8HDrwLAOUbF603jq3k16md5w",
-    "wholeAspectUnderstandingKey": "app-FEptp9FITE3rAW8TIR7TEQs2"
+    "wholeAspectUnderstandingKey": "app-FEptp9FITE3rAW8TIR7TEQs2",
+    "noteKey": "app-niNZLcOidx3z1uAD5SiZEpPP"
   },
   "repository": {
     "type": "git",

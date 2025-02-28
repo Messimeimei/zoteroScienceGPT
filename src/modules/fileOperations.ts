@@ -1,5 +1,6 @@
+import { get } from "http";
 import { getLocaleID, getString } from "../utils/locale";
-import { sendMessageToClassficationAPI, extractStreamData, displayReceivedMessage, sendMessageToAbstractionAPI } from "./sideBarChat";
+import { sendMessageToClassficationAPI, extractStreamData, displayReceivedMessage, sendMessageToAbstractionAPI, sendMessageToNoterAPI } from "./sideBarChat";
 import { marked } from "marked";
 
 export class ZoteroFileHandler {
@@ -27,6 +28,15 @@ export class ZoteroFileHandler {
             ztoolkit.log(`文件夹已创建或已存在: ${pdfConversationPath}`);
         } catch (error) {
             ztoolkit.log(`创建文件夹失败: ${pdfConversationPath}`, error);
+        }
+
+        // 创建 文献笔记 文件夹
+        const notePath = dataDirPath + '\\notes';
+        try {
+            await Zotero.File.createDirectoryIfMissingAsync(notePath);
+            ztoolkit.log(`文件夹已创建或已存在: ${notePath}`);
+        } catch (error) {
+            ztoolkit.log(`创建文件夹失败: ${notePath}`, error);
         }
     }
 
@@ -176,9 +186,9 @@ export class ZoteroFileHandler {
     }
 
     // 根据PDF ID 获取全文 
-    static async getPdfInfoById(itemId: number) {
+    static async getPdfInfoById(pdfItemID: number) {
         try {
-            const item = Zotero.Items.get(itemId);
+            const item = Zotero.Items.get(pdfItemID);
             // 判断附件是否存在
             if (item) {
                 const isPdf = item.isPDFAttachment();
@@ -188,14 +198,15 @@ export class ZoteroFileHandler {
                     ztoolkit.log("获取的PDF文本内容：", itemData); // 添加调试日志
                     return itemData;
                 } else {
+                    ztoolkit.log(`未找到ID为 ${pdfItemID} 的pdf`);
                     return null;
                 }
             } else {
-                ztoolkit.log(`未找到ID为 ${itemId} 的pdf`);
+                ztoolkit.log(`未找到ID为 ${pdfItemID} 的pdf`);
                 return null;
             }
         } catch (error) {
-            ztoolkit.log(`获取ID为 ${itemId} 的条目信息时出错`, error);
+            ztoolkit.log(`获取ID为 ${pdfItemID} 的条目信息时出错`, error);
             return null;
         }
     }
@@ -278,7 +289,7 @@ export class ZoteroFileHandler {
                     };
 
                     if (itemInfo) {
-                        ztoolkit.log("条目数据：", itemInfo);
+                        ztoolkit.log("回调函数返回的：条目数据：", itemInfo);
                         // 调用外部回调，如果外部注册了回调函数，这里就返回条目信息
                         if (ZoteroFileHandler.getItemDataCallback) {
                             ZoteroFileHandler.getItemDataCallback(itemInfo);
@@ -334,14 +345,13 @@ export class ZoteroFileHandler {
         });
     }
 
-
-    // 功能一、注册右键分类功能
-    static registerFolderClassification() {
-        const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/chat.png`;
+    // 功能一、文件夹分类，为文件夹注册一个新的右键分类功能
+    static registerFolderClassificationTest() {
+        const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`;
         // item menuitem with icon
-        ztoolkit.Menu.register("item", {
+        ztoolkit.Menu.register("collection", {
             tag: "menuitem",
-            id: "zotero-itemmenu-addontemplate-test",
+            id: "zotero-collectionmenu-folder-classification",
             label: getString("menuitem-label"),
             commandListener: (ev) => addon.hooks.onDialogEvents("classification"),
             icon: menuIcon,
@@ -360,32 +370,9 @@ export class ZoteroFileHandler {
             },
         };
 
-        const dialogHelper = new ztoolkit.Dialog(5, 1)  // 改为只有1列
-            // 第一段：大标题
+        const dialogHelper = new ztoolkit.Dialog(4, 1)  // 改为只有1列
+            // 第一段：开始整理按钮
             .addCell(0, 0, {
-                tag: "h1",
-                properties: { innerHTML: "文献整理" },
-                styles: {
-                    width: "100%",
-                    textAlign: "center",
-                    margin: "10px 0"
-                },
-            })
-            // 第二段：说明文本
-            .addCell(1, 0, {
-                tag: "p",
-                properties: {
-                    innerHTML: "请选择整理方式：单文件夹整理将对当前选中的文件夹进行整理；多文件夹整理将对所有文件夹进行批量整理。"
-                },
-                styles: {
-                    width: "100%",
-                    textAlign: "center",
-                    margin: "10px 0",
-                    padding: "0 20px"
-                }
-            })
-            // 第三段：两个并列按钮
-            .addCell(2, 0, {
                 tag: "div",
                 styles: {
                     display: "flex",
@@ -398,7 +385,7 @@ export class ZoteroFileHandler {
                         tag: "button",
                         namespace: "html",
                         attributes: { type: "button" },
-                        properties: { innerHTML: "单文件夹整理" },
+                        properties: { innerHTML: "开始整理" },
                         styles: {
                             padding: "5px 15px",
                             margin: "0 10px",
@@ -408,13 +395,18 @@ export class ZoteroFileHandler {
                             type: "click",
                             listener: async () => {
                                 // 实现单文件夹整理
-                                ztoolkit.log("选择了单文件夹整理");
+                                ztoolkit.log("选择了开始整理");
                                 // 获取当前选中的集合
                                 const ZoteroPane = Zotero.getActiveZoteroPane();
                                 const collection = ZoteroPane.getSelectedCollection();
 
+                                // 更新内容展示框为“正在处理中，请稍等^_^”
+                                const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
+                                if (contentDiv) {
+                                    contentDiv.innerHTML = "正在处理中，请稍等^_^";
+                                }
+
                                 if (!collection) {
-                                    const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
                                     if (contentDiv) {
                                         contentDiv.innerHTML = "请先选择一个文件夹！";
                                     }
@@ -458,27 +450,11 @@ export class ZoteroFileHandler {
                             }
                         }]
                     },
-                    {
-                        tag: "button",
-                        namespace: "html",
-                        attributes: { type: "button" },
-                        properties: { innerHTML: "多文件夹整理" },
-                        styles: {
-                            padding: "5px 15px",
-                            margin: "0 10px",
-                            minWidth: "120px"  // 添加最小宽度使按钮大小一致
-                        },
-                        listeners: [{
-                            type: "click",
-                            listener: () => {
-                                ztoolkit.log("选择了多文件夹整理");
-                            }
-                        }]
-                    }
+
                 ]
             })
-            // 第四段：可滚动的内容展示框
-            .addCell(3, 0, {
+            // 第二段：可滚动的内容展示框
+            .addCell(1, 0, {
                 tag: "div",
                 attributes: {
                     "data-content-display": ""  // 添加标识属性
@@ -496,8 +472,8 @@ export class ZoteroFileHandler {
                     innerHTML: content || "暂无内容"
                 }
             })
-            // 第五段：确定和取消按钮
-            .addCell(4, 0, {
+            // 第三段：确定和取消按钮
+            .addCell(2, 0, {
                 tag: "div",
                 styles: {
                     display: "flex",
@@ -568,10 +544,6 @@ export class ZoteroFileHandler {
             })
             .setDialogData(dialogData)
             .open("文献整理");
-
-        addon.data.dialog = dialogHelper;
-        await dialogData.unloadLock.promise;
-        addon.data.dialog = undefined;
     }
 
     // 根据dify返回的结果注册新的创建新的文件夹和复制文件
@@ -802,6 +774,210 @@ export class ZoteroFileHandler {
         // 如果内容匹配任何一个正则表达式，则认为它是Markdown格式
         return markdownRegex.some((regex) => regex.test(content));
     }
+
+    // 功能三、注册右键单篇文献阅读笔记生成功能
+    static registerFolderClassification() {
+        const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/chat.png`;
+        // item menuitem with icon
+        ztoolkit.Menu.register("item", {
+            tag: "menuitem",
+            id: "zotero-itemmenu-addontemplate-test",
+            label: getString("abstract-label"),
+            commandListener: (ev) => addon.hooks.onDialogEvents("downloadNote"),
+            icon: menuIcon,
+        });
+    }
+
+    // 展示文献笔记的弹窗，并提供下载功能
+    static async downloadNoterDialog(content: string = "") {
+        let result: any; // Declare result at the beginning
+        let fileName: any;  // 保存笔记名称
+
+        // Create the loading dialog
+        const loadingDialogData: { [key: string | number]: any } = {
+            loadCallback: () => {
+                ztoolkit.log("Loading dialog opened");
+            },
+            unloadCallback: () => {
+                ztoolkit.log("Loading dialog closed");
+            },
+        };
+
+        const loadingDialog = new ztoolkit.Dialog(1, 1); // Only 1 column
+        loadingDialog.addCell(0, 0, {
+            tag: "div",
+            styles: {
+                width: "200px", // Subtract left and right padding
+                height: "150px",
+                margin: "10px auto", // Center horizontally
+                padding: "10px",
+                border: "1px solid #ccc",
+                overflowY: "auto",
+                backgroundColor: "#f5f5f5",
+                display: "none", // Initially hidden
+            },
+            properties: {
+                innerHTML: "正在生成笔记中......",
+            },
+        });
+        loadingDialog.setDialogData(loadingDialogData).open("运行中");
+
+        ztoolkit.log("Fetching notes...");
+        const ZoteroPane = Zotero.getActiveZoteroPane();
+        const item = await ZoteroPane.getSelectedItems()[0];
+        const itemData = await this.getItemInfoById(item.id);
+        if (itemData) {
+            fileName = itemData.title;
+        } else fileName = "未获得文献标题的文件";
+        ztoolkit.log("Viewing single item:", itemData);
+        const pdfItem = await item.getBestAttachment();
+        if (pdfItem) {
+            ztoolkit.log("Is it a PDF?", pdfItem.isPDFAttachment());
+            const pdfText = await pdfItem.attachmentText;
+            ztoolkit.log("Fetched PDF text content:", pdfText.slice(0, 100)); // Debug log
+            ztoolkit.log("Viewing single item:", itemData);
+            result = await sendMessageToNoterAPI("Generate reading notes for this document:\n", itemData, pdfText);
+        } else {
+            ztoolkit.log("Is it a PDF?", pdfItem);
+            ztoolkit.log("Viewing single item:", itemData);
+            result = await sendMessageToNoterAPI("Generate reading notes for this document:\n", itemData, null);
+        }
+
+        if (result && result.decoder) {
+            const { response, decoder } = result;
+            result = extractStreamData(response);
+            try {
+                if (ZoteroFileHandler.isMarkdown(result)) {
+                    result = marked.parse(result);
+                    ztoolkit.log('Checking for markdown content:', result);
+                } else {
+                    ztoolkit.log('Checking result without markdown content:', result);
+                }
+            } catch (error) {
+                ztoolkit.log(`Markdown conversion failed: ${error}`);
+                ztoolkit.log("Viewing raw content:", result);
+            }
+        } else {
+            result = "No notes fetched";
+        }
+
+        // Close the loading dialog
+        loadingDialog.window?.close();
+
+        // Create the result dialog
+        const resultDialogData: { [key: string | number]: any } = {
+            loadCallback: () => {
+                ztoolkit.log("Result dialog opened");
+            },
+            unloadCallback: () => {
+                ztoolkit.log("Result dialog closed");
+            },
+        };
+
+        const resultDialog = new ztoolkit.Dialog(4, 1);  // 告诉用户等待结果    
+
+        resultDialog
+            .addCell(0, 0, {
+                tag: "div",
+                attributes: {
+                    "data-content-display": "" // Add identifier attribute
+                },
+                styles: {
+                    width: "500px", // Subtract left and right padding
+                    height: "500px",
+                    margin: "10px auto", // Center horizontally
+                    padding: "10px",
+                    border: "1px solid #ccc",
+                    overflowY: "auto",
+                    backgroundColor: "#f5f5f5"
+                },
+                properties: {
+                    innerHTML: result || "Generating reading notes..."
+                }
+            })
+            .addCell(1, 0, {
+                tag: "div",
+                styles: {
+                    display: "flex",
+                    // Center buttons
+                    width: "100%",
+                    margin: "10px 0"
+                },
+                children: [
+                    {
+                        tag: "button",
+                        namespace: "html",
+                        attributes: { type: "button" },
+                        properties: { innerHTML: "Download" },
+                        styles: {
+                            padding: "5px 15px",
+                            margin: "0 10px",
+                            minWidth: "80px"
+                        },
+                        listeners: [{
+                            type: "click",
+                            listener: async () => {
+                                ztoolkit.log("Download button clicked");
+                                try {
+                                    // Check if result exists
+                                    if (result) {
+                                        // Remove ```json and ``` from the content if needed
+                                        if (result.startsWith('```json') && result.endsWith('```')) {
+                                            result = result.slice(7, -3);
+                                        }
+
+                                        ztoolkit.log("Viewing returned result:", result);
+
+                                        // 保存对话结果到文件
+                                        const dataDir = Zotero.DataDirectory;
+                                        const pdfConversationPath = PathUtils.join(dataDir.dir, 'notes');
+
+                                        // 创建文件路径
+                                        const filePath = PathUtils.join(pdfConversationPath, `${fileName}.txt`);
+
+                                        // 写入内容到文件
+                                        try {
+                                            await Zotero.File.putContentsAsync(filePath, result);
+                                            ztoolkit.log(`文件已保存: ${filePath}`);
+                                        } catch (error) {
+                                            ztoolkit.log(`保存文件失败: ${filePath}`, error);
+                                        }
+
+                                        ztoolkit.log("File download initiated");
+                                    } else {
+                                        throw new Error("Result is empty");
+                                    }
+                                } catch (error: unknown) {
+                                    ztoolkit.getGlobal("alert")(`Failed to parse result: ${(error as Error).message}`);
+                                }
+                                resultDialog.window?.close(); // Close the dialog after downloading
+                            }
+                        }]
+                    },
+                    {
+                        tag: "button",
+                        namespace: "html",
+                        attributes: { type: "button" },
+                        properties: { innerHTML: "Cancel" },
+                        styles: {
+                            padding: "5px 15px",
+                            margin: "0 10px",
+                            minWidth: "80px"
+                        },
+                        listeners: [{
+                            type: "click",
+                            listener: () => {
+                                ztoolkit.log("Cancel button clicked");
+                                resultDialog.window?.close(); // Close the result dialog
+                            }
+                        }]
+                    }
+                ]
+            })
+            .setDialogData(resultDialogData)
+            .open("Document Notes");
+    }
+
 
 }
 
