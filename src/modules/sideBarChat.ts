@@ -193,7 +193,7 @@ export function extractStreamData(reader: any) {
       return;
     }
 
-    ztoolkit.log("去掉data后结果：",messageParts)
+    ztoolkit.log("去掉data后结果：", messageParts)
 
     // 尝试解析为 JSON
     try {
@@ -204,7 +204,7 @@ export function extractStreamData(reader: any) {
         // 如果 event 是 'message_end'，则停止拼接，跳出当前循环
         if (event === 'message_end') {
           ztoolkit.log("检测到 message_end，停止拼接");
-          return; 
+          return;
         }
 
         // 如果 event 是 'agent_message'，则拼接 answer
@@ -308,13 +308,13 @@ export async function sendMessageToClassficationAPI(message: any, needExtraInfo:
 // 文献摘要API
 export async function sendMessageToAbstractionAPI(message: any, metaData: any): Promise<SendMessageResponse | undefined> {
   // 基于多篇文献元数据对文献进行主题摘要，并返回内容
-    if (typeof metaData === 'object') {
-      metaData = JSON.stringify(metaData);
-    }
+  if (typeof metaData === 'object') {
+    metaData = JSON.stringify(metaData);
+  }
 
-    ztoolkit.log('查看多个文献元数据：', metaData)
-    // 拼接 用户输入和相关元数据
-    message = `
+  ztoolkit.log('查看多个文献元数据：', metaData)
+  // 拼接 用户输入和相关元数据
+  message = `
                ${message}\n
                ${metaData}`;
 
@@ -352,13 +352,13 @@ export async function sendMessageToAbstractionAPI(message: any, metaData: any): 
 
 
 // 单篇文献理解API
-export async function sendMessageToSingleConversationAPI(message:any, selectedText: any, wholeText: any): Promise<SendMessageResponse | undefined> {
+export async function sendMessageToSingleConversationAPI(message: any, selectedText: any, wholeText: any): Promise<SendMessageResponse | undefined> {
   // 基于多篇文献元数据对文献进行主题摘要，并返回内容
-    ztoolkit.log('查看用户提问：', message)
-    ztoolkit.log('查看选中内容：', selectedText)
-    ztoolkit.log('查看pdf全文：', wholeText)
-    // 拼接 用户输入和相关元数据
-    wholeText = `用户提问：${message}\n
+  ztoolkit.log('查看用户提问：', message)
+  ztoolkit.log('查看选中内容：', selectedText)
+  ztoolkit.log('查看pdf全文：', wholeText)
+  // 拼接 用户输入和相关元数据
+  wholeText = `用户提问：${message}\n
                选中内容：${selectedText}\n
                PDF全文（上下文背景）：${wholeText}`;
 
@@ -395,19 +395,19 @@ export async function sendMessageToSingleConversationAPI(message:any, selectedTe
 }
 
 // 整体文献摘要API
-export async function sendMessageToWholeAspectUnderstandingAPI(message: any, metaData: any, allMetaData:any): Promise<SendMessageResponse | undefined> {
+export async function sendMessageToWholeAspectUnderstandingAPI(message: any, metaData: any, allMetaData: any): Promise<SendMessageResponse | undefined> {
   // 对选中的单篇文献或整体文件夹的文献进行提问
-    if (typeof metaData === 'object') {
-      metaData = JSON.stringify(metaData);
-    }
+  if (typeof metaData === 'object') {
+    metaData = JSON.stringify(metaData);
+  }
 
-    if (typeof allMetaData === 'object') {
-      allMetaData = JSON.stringify(allMetaData);
-    }
+  if (typeof allMetaData === 'object') {
+    allMetaData = JSON.stringify(allMetaData);
+  }
 
-    ztoolkit.log('查看多个文献元数据：', allMetaData)
-    // 拼接用户输入和相关元数据
-    message = `
+  ztoolkit.log('查看多个文献元数据：', allMetaData)
+  // 拼接用户输入和相关元数据
+  message = `
                ${message}\n
                当前选中文献元数据:${metaData}\n
                当前选中文件夹所有文献元数据:${allMetaData}\n`;

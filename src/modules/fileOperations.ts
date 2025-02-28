@@ -12,14 +12,23 @@ export class ZoteroFileHandler {
         ztoolkit.log("查看dataDirPath：", dataDirPath)
         const relativePath = 'userData';
         const targetPath = dataDirPath + '\\' + relativePath;
-        ztoolkit.log("查看：",targetPath)
+        ztoolkit.log("查看：", targetPath)
         try {
             await Zotero.File.createDirectoryIfMissingAsync(targetPath);
             ztoolkit.log(`文件夹已创建或已存在: ${targetPath}`);
         } catch (error) {
             ztoolkit.log(`创建文件夹失败: ${targetPath}`, error);
         }
-    }   
+
+        // 创建 PdfConversation 文件夹
+        const pdfConversationPath = dataDirPath + '\\PdfConversation';
+        try {
+            await Zotero.File.createDirectoryIfMissingAsync(pdfConversationPath);
+            ztoolkit.log(`文件夹已创建或已存在: ${pdfConversationPath}`);
+        } catch (error) {
+            ztoolkit.log(`创建文件夹失败: ${pdfConversationPath}`, error);
+        }
+    }
 
     // 注册一个回调函数，可以在外部获取单个条目数据
     static getItemDataCallback: ((itemData: { [key: string]: any } | null) => void) | null = null;
@@ -207,7 +216,7 @@ export class ZoteroFileHandler {
             return null;
         }
     }
-    
+
     // 注册监听条目的选中，里面有当前选中的条目 ID
     static async registerItemListener() {
         Zotero.ItemPaneManager.registerSection({
@@ -282,11 +291,11 @@ export class ZoteroFileHandler {
                 return true;
             },
             // 当节渲染时调用
-            onRender: ({body,}) => {
+            onRender: ({ body, }) => {
                 ztoolkit.log("走到这里")
                 const doc = body.querySelector('#zotero-item-pane-message-box');
-                ztoolkit.log("是否有了？？",doc)
-                
+                ztoolkit.log("是否有了？？", doc)
+
             },
             // 异步渲染
             onAsyncRender: async ({
@@ -331,11 +340,11 @@ export class ZoteroFileHandler {
         const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/chat.png`;
         // item menuitem with icon
         ztoolkit.Menu.register("item", {
-        tag: "menuitem",
-        id: "zotero-itemmenu-addontemplate-test",
-        label: getString("menuitem-label"),
-        commandListener: (ev) => addon.hooks.onDialogEvents("classification"),
-        icon: menuIcon,
+            tag: "menuitem",
+            id: "zotero-itemmenu-addontemplate-test",
+            label: getString("menuitem-label"),
+            commandListener: (ev) => addon.hooks.onDialogEvents("classification"),
+            icon: menuIcon,
         });
     }
 
@@ -403,7 +412,7 @@ export class ZoteroFileHandler {
                                 // 获取当前选中的集合
                                 const ZoteroPane = Zotero.getActiveZoteroPane();
                                 const collection = ZoteroPane.getSelectedCollection();
-                                
+
                                 if (!collection) {
                                     const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
                                     if (contentDiv) {
@@ -436,7 +445,7 @@ export class ZoteroFileHandler {
                                         if (result && result.decoder) {
                                             const { response, decoder } = result;
                                             const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
-                                            
+
                                             if (contentDiv) {
                                                 // 直接使用 displayReceivedMessage 函数
                                                 result = displayReceivedMessage(response, decoder, dialogHelper.window?.document.body, contentDiv);
@@ -445,7 +454,7 @@ export class ZoteroFileHandler {
                                         }
                                     }
                                 }
-                            
+
                             }
                         }]
                     },
@@ -489,7 +498,7 @@ export class ZoteroFileHandler {
             })
             // 第五段：确定和取消按钮
             .addCell(4, 0, {
-                tag: "div", 
+                tag: "div",
                 styles: {
                     display: "flex",
                     justifyContent: "center",  // 居中显示按钮
@@ -499,7 +508,7 @@ export class ZoteroFileHandler {
                 children: [
                     {
                         tag: "button",
-                        namespace: "html", 
+                        namespace: "html",
                         attributes: { type: "button" },
                         properties: { innerHTML: "确定" },
                         styles: {
@@ -568,214 +577,214 @@ export class ZoteroFileHandler {
     // 根据dify返回的结果注册新的创建新的文件夹和复制文件
     static async createNewFolder(name: string, ids: number[], parentID?: number) {
         try {
-        // 创建新的收藏集对象
-        const newCollection = new Zotero.Collection();
-        newCollection.name = name;
-        
-        // 设置父文件夹ID（如果有的话）
-        if (parentID !== undefined) {
-            newCollection.parentID = parentID;
+            // 创建新的收藏集对象
+            const newCollection = new Zotero.Collection();
+            newCollection.name = name;
+
+            // 设置父文件夹ID（如果有的话）
+            if (parentID !== undefined) {
+                newCollection.parentID = parentID;
+            }
+
+            // 保存收藏集到数据库
+            await newCollection.saveTx();
+
+            // 将文献添加到新收藏集中
+            const items = Zotero.Items.get(ids)
+            for (const item of items) {
+                const itemData = await ZoteroFileHandler.getItemInfoById(item.id);
+                ztoolkit.log("查看item数据：", itemData)
+                ztoolkit.log("查看新文件夹id：", newCollection.id)
+                item.addToCollection(newCollection.id);
+                await item.saveTx()
+            }
+
+            ztoolkit.log(`成功创建文件夹 "${name}" 并添加了 ${items.length} 个条目`);
+            return newCollection;
+        } catch (error) {
+            ztoolkit.log(`创建文件夹失败: ${error}`);
+            throw error;
         }
-
-        // 保存收藏集到数据库
-        await newCollection.saveTx();
-
-        // 将文献添加到新收藏集中
-        const items = Zotero.Items.get(ids)
-        for (const item of items) {
-            const itemData = await ZoteroFileHandler.getItemInfoById(item.id);
-            ztoolkit.log("查看item数据：", itemData)
-            ztoolkit.log("查看新文件夹id：", newCollection.id)
-            item.addToCollection(newCollection.id);
-            await item.saveTx()
-        }
-
-        ztoolkit.log(`成功创建文件夹 "${name}" 并添加了 ${items.length} 个条目`);
-        return newCollection;
-    } catch (error) {
-        ztoolkit.log(`创建文件夹失败: ${error}`);
-        throw error;
-    }
     }
 
     // 功能二、一次性更新点击一个文件夹右侧展示的内容
     static async topicAbstract() {
-    let result: any;
+        let result: any;
 
-    const windows = Zotero.getMainWindows();
+        const windows = Zotero.getMainWindows();
 
-    for (const win of windows) {
-        const doc = win.document;
+        for (const win of windows) {
+            const doc = win.document;
 
-        // 获取右侧 message box 容器
-        const messageBox = doc.getElementById("zotero-item-pane-message-box");
-        if (!messageBox) {
-            ztoolkit.log("Message box not found!");
-            continue;
-        }
-
-        // 设置父容器布局
-        messageBox.style.display = "flex";
-        messageBox.style.flexDirection = "column";
-        messageBox.style.minHeight = "0";
-
-        // 定义一个函数，用于清除 messageBox 内所有原始内容
-        const clearMessageBox = () => {
-            while (messageBox.firstChild) {
-                messageBox.removeChild(messageBox.firstChild);
+            // 获取右侧 message box 容器
+            const messageBox = doc.getElementById("zotero-item-pane-message-box");
+            if (!messageBox) {
+                ztoolkit.log("Message box not found!");
+                continue;
             }
-        };
 
-        // 创建并插入自定义元素的方法
-        const addCustomElement = async (content: string) => {
-            // 清除所有原始内容（包括 Zotero 默认内容和之前的自定义内容）
-            clearMessageBox();
+            // 设置父容器布局
+            messageBox.style.display = "flex";
+            messageBox.style.flexDirection = "column";
+            messageBox.style.minHeight = "0";
 
-            // 如果已经存在自定义元素，则直接更新；否则创建
-            let customElement = doc.getElementById("custom-element");
-            if (!customElement) {
-                customElement = ztoolkit.UI.createElement(doc, "div", {
-                    properties: { id: "custom-element" },
-                    styles: {
-                        width: "100%",
-                        height: "100%",
-                        boxSizing: "border-box",
-                        overflowY: "auto",
-                        maxHeight: "700px",
-                        padding: "10px",
-                        backgroundColor: "#f0f0f0",
-                        border: "1px solid #ccc",
-                        borderRadius: "5px",
-                        fontFamily: "Arial, sans-serif",
-                        userSelect: "text"
-                    },
-                });
-                messageBox.appendChild(customElement);
-            }
-            // 更新自定义元素内容
-            customElement.innerHTML = content;
-        };
-
-        // 立即清除原有内容并显示当前集合的信息，而非先显示“加载中”
-        // 这里先触发 onCollectionSelected 来处理当前选中集合
-        const activePane = Zotero.getActiveZoteroPane();
-
-        // 备份原始 onCollectionSelected 方法
-        if (!activePane._originalOnCollectionSelected) {
-            activePane._originalOnCollectionSelected = activePane.onCollectionSelected;
-        }
-
-        // 重写 onCollectionSelected 方法
-        activePane.onCollectionSelected = async function (...args: unknown[]) {
-            // 调用 Zotero 原始逻辑（如果需要）
-            this._originalOnCollectionSelected.apply(this, ...args);
-
-            // 清除 messageBox 中原有内容
-            clearMessageBox();
-
-            const currentCollection = activePane.getSelectedCollection();
-            const collectionName = currentCollection?.name;
-            const items = currentCollection?.getChildItems();
-            ztoolkit.log("文献摘要功能——当前选中的文献集合：", collectionName);
-            ztoolkit.log("文献摘要功能——当前选中文献集合下所有条目：", items);
-
-            if (items && items.length > 0) {
-                // 1. 获取最新的元数据
-                const metaData: { [key: string]: any } = {};
-                for (const item of items) {
-                    const itemId = item.id;
-                    const itemData = await ZoteroFileHandler.getItemInfoById(itemId);
-                    if (itemData) {
-                        ztoolkit.log("查看单个条目:", itemData);
-                        metaData[itemData.id] = itemData;
-                    } else {
-                        ztoolkit.log(`无法获取条目 ID 为 ${itemId} 的数据`);
-                    }
+            // 定义一个函数，用于清除 messageBox 内所有原始内容
+            const clearMessageBox = () => {
+                while (messageBox.firstChild) {
+                    messageBox.removeChild(messageBox.firstChild);
                 }
-                ztoolkit.log("条目所在文件夹所有数据", metaData);
+            };
 
-                // 2. 处理本地元数据文件
-                const dataDir = Zotero.DataDirectory; 
-                const dataDirPath = dataDir.dir;        
-                const relativePath = 'userData';
-                const targetPath = dataDirPath + '\\' + relativePath;
+            // 创建并插入自定义元素的方法
+            const addCustomElement = async (content: string) => {
+                // 清除所有原始内容（包括 Zotero 默认内容和之前的自定义内容）
+                clearMessageBox();
 
-                // 构建文件名（自动处理特殊字符）
-                const jsonFileName = `metadata_${collectionName}.json`;
-                const jsonFilePath = PathUtils.join(targetPath, jsonFileName);
+                // 如果已经存在自定义元素，则直接更新；否则创建
+                let customElement = doc.getElementById("custom-element");
+                if (!customElement) {
+                    customElement = ztoolkit.UI.createElement(doc, "div", {
+                        properties: { id: "custom-element" },
+                        styles: {
+                            width: "100%",
+                            height: "100%",
+                            boxSizing: "border-box",
+                            overflowY: "auto",
+                            maxHeight: "700px",
+                            padding: "10px",
+                            backgroundColor: "#f0f0f0",
+                            border: "1px solid #ccc",
+                            borderRadius: "5px",
+                            fontFamily: "Arial, sans-serif",
+                            userSelect: "text"
+                        },
+                    });
+                    messageBox.appendChild(customElement);
+                }
+                // 更新自定义元素内容
+                customElement.innerHTML = content;
+            };
 
-                const fileExists = await IOUtils.exists(jsonFilePath);
-                ztoolkit.log("路径是否存在：", fileExists);
+            // 立即清除原有内容并显示当前集合的信息，而非先显示“加载中”
+            // 这里先触发 onCollectionSelected 来处理当前选中集合
+            const activePane = Zotero.getActiveZoteroPane();
 
-                if (fileExists) {
-                    const jsonDataResult = await Zotero.File.getContentsAsync(jsonFilePath, 'utf8');
-                    if (typeof jsonDataResult !== 'string') {
-                        throw new Error('Invalid file content type');
+            // 备份原始 onCollectionSelected 方法
+            if (!activePane._originalOnCollectionSelected) {
+                activePane._originalOnCollectionSelected = activePane.onCollectionSelected;
+            }
+
+            // 重写 onCollectionSelected 方法
+            activePane.onCollectionSelected = async function (...args: unknown[]) {
+                // 调用 Zotero 原始逻辑（如果需要）
+                this._originalOnCollectionSelected.apply(this, ...args);
+
+                // 清除 messageBox 中原有内容
+                clearMessageBox();
+
+                const currentCollection = activePane.getSelectedCollection();
+                const collectionName = currentCollection?.name;
+                const items = currentCollection?.getChildItems();
+                ztoolkit.log("文献摘要功能——当前选中的文献集合：", collectionName);
+                ztoolkit.log("文献摘要功能——当前选中文献集合下所有条目：", items);
+
+                if (items && items.length > 0) {
+                    // 1. 获取最新的元数据
+                    const metaData: { [key: string]: any } = {};
+                    for (const item of items) {
+                        const itemId = item.id;
+                        const itemData = await ZoteroFileHandler.getItemInfoById(itemId);
+                        if (itemData) {
+                            ztoolkit.log("查看单个条目:", itemData);
+                            metaData[itemData.id] = itemData;
+                        } else {
+                            ztoolkit.log(`无法获取条目 ID 为 ${itemId} 的数据`);
+                        }
                     }
-                    const localData = JSON.parse(jsonDataResult);
-                    const localArticleIds = Object.keys(localData.articles).sort();
-                    const newArticleIds = Object.keys(metaData).sort();
-                    const isSame = JSON.stringify(localArticleIds) === JSON.stringify(newArticleIds);
-                    ztoolkit.log('查看对比结果：', isSame);
+                    ztoolkit.log("条目所在文件夹所有数据", metaData);
 
-                    if (isSame) {
-                        // 如果对比一致，直接使用本地摘要
-                        result = localData.summary;
-                        ztoolkit.log("查看使用的本地摘要：", result);
-                        ztoolkit.log("本地元数据中的论文序号与最新数据一致，直接采用本地摘要。");
+                    // 2. 处理本地元数据文件
+                    const dataDir = Zotero.DataDirectory;
+                    const dataDirPath = dataDir.dir;
+                    const relativePath = 'userData';
+                    const targetPath = dataDirPath + '\\' + relativePath;
+
+                    // 构建文件名（自动处理特殊字符）
+                    const jsonFileName = `metadata_${collectionName}.json`;
+                    const jsonFilePath = PathUtils.join(targetPath, jsonFileName);
+
+                    const fileExists = await IOUtils.exists(jsonFilePath);
+                    ztoolkit.log("路径是否存在：", fileExists);
+
+                    if (fileExists) {
+                        const jsonDataResult = await Zotero.File.getContentsAsync(jsonFilePath, 'utf8');
+                        if (typeof jsonDataResult !== 'string') {
+                            throw new Error('Invalid file content type');
+                        }
+                        const localData = JSON.parse(jsonDataResult);
+                        const localArticleIds = Object.keys(localData.articles).sort();
+                        const newArticleIds = Object.keys(metaData).sort();
+                        const isSame = JSON.stringify(localArticleIds) === JSON.stringify(newArticleIds);
+                        ztoolkit.log('查看对比结果：', isSame);
+
+                        if (isSame) {
+                            // 如果对比一致，直接使用本地摘要
+                            result = localData.summary;
+                            ztoolkit.log("查看使用的本地摘要：", result);
+                            ztoolkit.log("本地元数据中的论文序号与最新数据一致，直接采用本地摘要。");
+                        } else {
+                            // 数据不一致，则调用接口更新并写入本地元数据
+                            ztoolkit.log("检测到论文序号变化，重新调用接口获取摘要。");
+                            result = await sendMessageToAbstractionAPI("对下列文献进行主题摘要：", metaData);
+                            if (result && result.decoder) {
+                                const { response, decoder } = result;
+                                result = extractStreamData(response);
+                            }
+                            const dataToWrite = { articles: metaData, summary: result };
+                            await Zotero.File.putContentsAsync(jsonFilePath, JSON.stringify(dataToWrite, null, 2));
+                            ztoolkit.log("本地元数据已更新：", jsonFilePath);
+                        }
                     } else {
-                        // 数据不一致，则调用接口更新并写入本地元数据
-                        ztoolkit.log("检测到论文序号变化，重新调用接口获取摘要。");
+                        // 本地没有元数据，调用接口并写入
                         result = await sendMessageToAbstractionAPI("对下列文献进行主题摘要：", metaData);
                         if (result && result.decoder) {
                             const { response, decoder } = result;
                             result = extractStreamData(response);
                         }
                         const dataToWrite = { articles: metaData, summary: result };
+                        ztoolkit.log('查看待更新数据:', dataToWrite);
                         await Zotero.File.putContentsAsync(jsonFilePath, JSON.stringify(dataToWrite, null, 2));
                         ztoolkit.log("本地元数据已更新：", jsonFilePath);
                     }
-                } else {
-                    // 本地没有元数据，调用接口并写入
-                    result = await sendMessageToAbstractionAPI("对下列文献进行主题摘要：", metaData);
-                    if (result && result.decoder) {
-                        const { response, decoder } = result;
-                        result = extractStreamData(response);
-                    }
-                    const dataToWrite = { articles: metaData, summary: result };
-                    ztoolkit.log('查看待更新数据:', dataToWrite);
-                    await Zotero.File.putContentsAsync(jsonFilePath, JSON.stringify(dataToWrite, null, 2));
-                    ztoolkit.log("本地元数据已更新：", jsonFilePath);
-                }
-                
-                // 延时等待（200 毫秒），确保原始 UI 更新已完成
-                await new Promise(resolve => setTimeout(resolve, 50));
-                
-                // 3. 根据 Markdown 格式判断更新展示内容
-                try {
-                    if (ZoteroFileHandler.isMarkdown(result)) {
-                        const htmlContent = marked.parse(result);
-                        ztoolkit.log('查看是否有 markdown 内容：', result);
-                        addCustomElement(await htmlContent);
-                    } else {
-                        ztoolkit.log('查看没有 markdown 内容的 result：', result);
-                        await addCustomElement(result);
-                    }
-                } catch (error) {
-                    ztoolkit.log(`Markdown 转换失败: ${error}`);
-                    ztoolkit.log("查看原始内容：", result);
-                    await addCustomElement("<p style='color: red;'>无法显示内容，请检查 Markdown 格式。</p>");
-                }
-            }
 
-            ztoolkit.log("Collection switched, custom element updated");
-        };
+                    // 延时等待（200 毫秒），确保原始 UI 更新已完成
+                    await new Promise(resolve => setTimeout(resolve, 50));
 
-        // 新增：立即调用 onCollectionSelected 展示当前选中集合的内容
-        activePane.onCollectionSelected();
+                    // 3. 根据 Markdown 格式判断更新展示内容
+                    try {
+                        if (ZoteroFileHandler.isMarkdown(result)) {
+                            const htmlContent = marked.parse(result);
+                            ztoolkit.log('查看是否有 markdown 内容：', result);
+                            addCustomElement(await htmlContent);
+                        } else {
+                            ztoolkit.log('查看没有 markdown 内容的 result：', result);
+                            await addCustomElement(result);
+                        }
+                    } catch (error) {
+                        ztoolkit.log(`Markdown 转换失败: ${error}`);
+                        ztoolkit.log("查看原始内容：", result);
+                        await addCustomElement("<p style='color: red;'>无法显示内容，请检查 Markdown 格式。</p>");
+                    }
+                }
+
+                ztoolkit.log("Collection switched, custom element updated");
+            };
+
+            // 新增：立即调用 onCollectionSelected 展示当前选中集合的内容
+            activePane.onCollectionSelected();
+        }
     }
-    }   
-    
+
     // 判断是否为 Markdown 格式的函数
     static isMarkdown(content: string): boolean {
         // 检查是否包含常见的Markdown符号，有一个符合就用markdown展示
