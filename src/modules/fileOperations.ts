@@ -361,6 +361,7 @@ export class ZoteroFileHandler {
     // 展示文献分类的弹窗，具体实现对单个/所有文件夹中文件实现分类
     static async showClassificationDialog(content: string = "") {
         let result: any; // 在函数开头声明
+        let currentCollectionId: any;  // 保存当前选中的文件夹 ID
         const dialogData: { [key: string | number]: any } = {
             loadCallback: () => {
                 ztoolkit.log("分类对话框已打开");
@@ -399,6 +400,7 @@ export class ZoteroFileHandler {
                                 // 获取当前选中的集合
                                 const ZoteroPane = Zotero.getActiveZoteroPane();
                                 const collection = ZoteroPane.getSelectedCollection();
+                                currentCollectionId = collection?.id;
 
                                 // 更新内容展示框为“正在处理中，请稍等^_^”
                                 const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
@@ -432,7 +434,7 @@ export class ZoteroFileHandler {
                                             }
                                         }
                                         ztoolkit.log("条目所在文件夹所有数据", allItemDataMap);
-                                        result = await sendMessageToClassficationAPI("对下列文献进行分类：\n", true, "", allItemDataMap);
+                                        result = await sendMessageToClassficationAPI(`parentID是${currentCollectionId}\n对下列文献进行分类：\n`, true, "", allItemDataMap);
 
                                         if (result && result.decoder) {
                                             const { response, decoder } = result;
@@ -977,7 +979,6 @@ export class ZoteroFileHandler {
             .setDialogData(resultDialogData)
             .open("Document Notes");
     }
-
 
 }
 
