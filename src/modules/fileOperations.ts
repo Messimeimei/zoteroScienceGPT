@@ -347,7 +347,7 @@ export class ZoteroFileHandler {
 
     // 功能一、文件夹分类，为文件夹注册一个新的右键分类功能
     static registerFolderClassificationTest() {
-        const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/favicon.png`;
+        const menuIcon = `chrome://${addon.data.config.addonRef}/content/icons/logo.png`;
         // item menuitem with icon
         ztoolkit.Menu.register("collection", {
             tag: "menuitem",
@@ -371,177 +371,184 @@ export class ZoteroFileHandler {
             },
         };
 
-        const dialogHelper = new ztoolkit.Dialog(4, 1)  // 改为只有1列
-            // 第一段：开始整理按钮
-            .addCell(0, 0, {
-                tag: "div",
-                styles: {
-                    display: "flex",
-                    justifyContent: "center",  // 改为center
-                    width: "100%",
-                    margin: "10px 0"
-                },
-                children: [
-                    {
-                        tag: "button",
-                        namespace: "html",
-                        attributes: { type: "button" },
-                        properties: { innerHTML: "开始整理" },
-                        styles: {
-                            padding: "5px 15px",
-                            margin: "0 10px",
-                            minWidth: "120px"  // 添加最小宽度使按钮大小一致
-                        },
-                        listeners: [{
-                            type: "click",
-                            listener: async () => {
-                                // 实现单文件夹整理
-                                ztoolkit.log("选择了开始整理");
-                                // 获取当前选中的集合
-                                const ZoteroPane = Zotero.getActiveZoteroPane();
-                                const collection = ZoteroPane.getSelectedCollection();
-                                currentCollectionId = collection?.id;
-
-                                // 更新内容展示框为“正在处理中，请稍等^_^”
-                                const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
-                                if (contentDiv) {
-                                    contentDiv.innerHTML = "正在处理中，请稍等^_^";
-                                }
-
-                                if (!collection) {
-                                    if (contentDiv) {
-                                        contentDiv.innerHTML = "请先选择一个文件夹！";
-                                    }
-                                    return;
-                                } else {
-                                    const collectionName = collection?.name
-                                    const items = collection?.getChildItems()
-                                    ztoolkit.log("条目所在集合：", collectionName)
-                                    // 调用外部回调，返回条目所在集合的所有信息
-                                    ztoolkit.log("条目所在集合下所有条目：", items)
-
-                                    // 提取所有条目数据
-                                    if (items && items.length > 0) {
-                                        const allItemDataMap: { [key: string]: any } = {};
-                                        for (const item of items) {
-                                            const itemId = item.id;
-                                            const itemData = await ZoteroFileHandler.getItemInfoById(itemId);
-                                            if (itemData) {
-                                                ztoolkit.log("查看单个条目:", itemData)
-                                                allItemDataMap[itemData.id] = itemData;   // 用文章名称为键，元数据为值
-                                            } else {
-                                                ztoolkit.log(`无法获取条目 ID 为 ${itemId} 的数据`);
-                                            }
-                                        }
-                                        ztoolkit.log("条目所在文件夹所有数据", allItemDataMap);
-                                        result = await sendMessageToClassficationAPI(`parentID是${currentCollectionId}\n对下列文献进行分类：\n`, true, "", allItemDataMap);
-
-                                        if (result && result.decoder) {
-                                            const { response, decoder } = result;
-                                            const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
-
-                                            if (contentDiv) {
-                                                // 直接使用 displayReceivedMessage 函数
-                                                result = displayReceivedMessage(response, decoder, dialogHelper.window?.document.body, contentDiv);
-                                            }
-                                            ztoolkit.log(result);
-                                        }
-                                    }
-                                }
-
-                            }
-                        }]
-                    },
-
-                ]
-            })
+        const dialogHelper = new ztoolkit.Dialog(2, 1)  // 改为只有1列
             // 第二段：可滚动的内容展示框
-            .addCell(1, 0, {
+            .addCell(0, 0, {
                 tag: "div",
                 attributes: {
                     "data-content-display": ""  // 添加标识属性
                 },
                 styles: {
-                    width: "calc(100% - 40px)",  // 减去左右padding
-                    height: "200px",
+                    width: "800px",  // 减去左右padding
+                    height: "450px",
                     margin: "10px auto",  // 使用auto实现水平居中
                     padding: "10px",
                     border: "1px solid #ccc",
                     overflowY: "auto",
-                    backgroundColor: "#f5f5f5"
+                    backgroundColor: "rgb(229, 255, 226)"
                 },
                 properties: {
                     innerHTML: content || "暂无内容"
                 }
             })
             // 第三段：确定和取消按钮
-            .addCell(2, 0, {
+            .addCell(1, 0, {
                 tag: "div",
                 styles: {
                     display: "flex",
-                    justifyContent: "center",  // 居中显示按钮
+                    justifyContent: "left",  // 居中显示按钮
                     width: "100%",
                     margin: "10px 0"
                 },
                 children: [
-                    {
-                        tag: "button",
-                        namespace: "html",
-                        attributes: { type: "button" },
-                        properties: { innerHTML: "确定" },
-                        styles: {
-                            padding: "5px 15px",
-                            margin: "0 10px",
-                            minWidth: "80px"
-                        },
-                        listeners: [{
-                            type: "click",
-                            listener: () => {
-                                ztoolkit.log("点击了确定按钮");
-                                try {
-                                    // 尝试解析result
-                                    if (result) {
-                                        // 检查并去除result开头的```json和结尾的```
-                                        if (result.startsWith('```json') && result.endsWith('```')) {
-                                            result = result.slice(7, -3);
-                                        }
-                                        ztoolkit.log("查看返回结果：", result)
-                                        const parsedResult = JSON.parse(result);
-                                        ztoolkit.log("解析成功，结果为:", parsedResult);
-                                        // 遍历解析后的结果
-                                        for (const folderInfo of parsedResult) {
-                                            ztoolkit.log("当前处理的文件夹信息:", folderInfo);
-                                            const { name, ids, parentID } = folderInfo;
-                                            ZoteroFileHandler.createNewFolder(name, ids, parentID);
-                                        }
-                                    } else {
-                                        throw new Error("result 为空");
-                                    }
-                                } catch (error: unknown) {
-                                    ztoolkit.getGlobal("alert")(`解析结果失败: ${(error as Error).message}`);
-                                }
-                                dialogHelper.window?.close();
-                            }
-                        }]
+                {
+                    tag: "button",
+                    namespace: "html",
+                    attributes: { type: "button" },
+                    properties: { innerHTML: "开始整理" },
+                    styles: {
+                        color: "rgb(37, 174, 238)",
+                        padding: "5px 15px",
+                        margin: "0 10px",
+                        minWidth: "100px", // 添加最小宽度使按钮大小一致
+                        fontSize: "14px",
+                        fontStyle: "bold",
+                        borderRadius: "14px",
+                        border: "1px solid rgb(37, 174, 238)",
+                        backgroundColor: "rgb(131, 204, 237)",
+                        cursor: "pointer",
                     },
-                    {
-                        tag: "button",
-                        namespace: "html",
-                        attributes: { type: "button" },
-                        properties: { innerHTML: "取消" },
-                        styles: {
-                            padding: "5px 15px",
-                            margin: "0 10px",
-                            minWidth: "80px"
-                        },
-                        listeners: [{
-                            type: "click",
-                            listener: () => {
-                                ztoolkit.log("点击了取消按钮");
-                                dialogHelper.window?.close();
+                    listeners: [{                        type: "click",
+                        listener: async () => {
+                            // 实现单文件夹整理
+                            ztoolkit.log("选择了开始整理");
+                            // 获取当前选中的集合
+                            const ZoteroPane = Zotero.getActiveZoteroPane();
+                            const collection = ZoteroPane.getSelectedCollection();
+                            currentCollectionId = collection?.id;
+
+                            // 更新内容展示框为“正在处理中，请稍等^_^”
+                            const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
+                            if (contentDiv) {
+                                contentDiv.innerHTML = "正在处理中，请稍等^_^";
                             }
-                        }]
-                    }
+
+                            if (!collection) {
+                                if (contentDiv) {
+                                    contentDiv.innerHTML = "请先选择一个文件夹！";
+                                }
+                                return;
+                            } else {
+                                const collectionName = collection?.name
+                                const items = collection?.getChildItems()
+                                ztoolkit.log("条目所在集合：", collectionName)
+                                // 调用外部回调，返回条目所在集合的所有信息
+                                ztoolkit.log("条目所在集合下所有条目：", items)
+
+                                // 提取所有条目数据
+                                if (items && items.length > 0) {
+                                    const allItemDataMap: { [key: string]: any } = {};
+                                    for (const item of items) {
+                                        const itemId = item.id;
+                                        const itemData = await ZoteroFileHandler.getItemInfoById(itemId);
+                                        if (itemData) {
+                                            ztoolkit.log("查看单个条目:", itemData)
+                                            allItemDataMap[itemData.id] = itemData;   // 用文章名称为键，元数据为值
+                                        } else {
+                                            ztoolkit.log(`无法获取条目 ID 为 ${itemId} 的数据`);
+                                        }
+                                    }
+                                    ztoolkit.log("条目所在文件夹所有数据", allItemDataMap);
+                                    result = await sendMessageToClassficationAPI(`parentID是${currentCollectionId}\n对下列文献进行分类：\n`, true, "", allItemDataMap);
+
+                                    if (result && result.decoder) {
+                                        const { response, decoder } = result;
+                                        const contentDiv = dialogHelper.window?.document.querySelector('[data-content-display]');
+
+                                        if (contentDiv) {
+                                            // 直接使用 displayReceivedMessage 函数
+                                            result = displayReceivedMessage(response, decoder, dialogHelper.window?.document.body, contentDiv);
+                                        }
+                                        ztoolkit.log(result);
+                                    }
+                                }
+                            }
+
+                        }
+                    }]
+                },
+                {
+                    tag: "button",
+                    namespace: "html",
+                    attributes: { type: "button" },
+                    properties: { innerHTML: "确定" },
+                    styles: {
+                        color: "rgb(37, 174, 238)",
+                        padding: "5px 15px",
+                        margin: "0 10px",
+                        minWidth: "100px", // 添加最小宽度使按钮大小一致
+                        fontSize: "14px",
+                        fontStyle: "bold",
+                        borderRadius: "14px",
+                        border: "1px solid rgb(37, 174, 238)",
+                        backgroundColor: "rgb(131, 204, 237)",
+                        cursor: "pointer",
+                    },
+                    listeners: [{
+                        type: "click",
+                        listener: () => {
+                            ztoolkit.log("点击了确定按钮");
+                            try {
+                                // 尝试解析result
+                                if (result) {
+                                    // 检查并去除result开头的```json和结尾的```
+                                    if (result.startsWith('```json') && result.endsWith('```')) {
+                                        result = result.slice(7, -3);
+                                    }
+                                    ztoolkit.log("查看返回结果：", result)
+                                    const parsedResult = JSON.parse(result);
+                                    ztoolkit.log("解析成功，结果为:", parsedResult);
+                                    // 遍历解析后的结果
+                                    for (const folderInfo of parsedResult) {
+                                        ztoolkit.log("当前处理的文件夹信息:", folderInfo);
+                                        const { name, ids, parentID } = folderInfo;
+                                        ZoteroFileHandler.createNewFolder(name, ids, parentID);
+                                    }
+                                } else {
+                                    throw new Error("result 为空");
+                                }
+                            } catch (error: unknown) {
+                                ztoolkit.getGlobal("alert")(`解析结果失败: ${(error as Error).message}`);
+                            }
+                            dialogHelper.window?.close();
+                        }
+                    }]
+                },
+                {
+                    tag: "button",
+                    namespace: "html",
+                    attributes: { type: "button" },
+                    properties: { innerHTML: "取消" },
+                    styles: {
+                        color: "rgb(37, 174, 238)",
+                        padding: "5px 15px",
+                        margin: "0 10px",
+                        minWidth: "100px", // 添加最小宽度使按钮大小一致
+                        fontSize: "14px",
+                        fontStyle: "bold",
+                        borderRadius: "14px",
+                        border: "1px solid rgb(37, 174, 238)",
+                        backgroundColor: "rgb(131, 204, 237)",
+                        cursor: "pointer",
+                    },
+                    listeners: [{
+                        type: "click",
+                        listener: () => {
+                            ztoolkit.log("点击了取消按钮");
+                            dialogHelper.window?.close();
+                        }
+                    }]
+                }
                 ]
             })
             .setDialogData(dialogData)
@@ -624,11 +631,10 @@ export class ZoteroFileHandler {
                             height: "100%",
                             boxSizing: "border-box",
                             overflowY: "auto",
-                            maxHeight: "700px",
+                            overflowX: "auto",
+                            maxHeight: "800px",
                             padding: "10px",
-                            backgroundColor: "#f0f0f0",
-                            border: "1px solid #ccc",
-                            borderRadius: "5px",
+                            backgroundColor: "rgb(255, 255, 255)",
                             fontFamily: "Arial, sans-serif",
                             userSelect: "text"
                         },

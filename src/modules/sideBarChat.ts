@@ -18,7 +18,7 @@ export function registerSidebarIcon() {
     },
     sidenav: {
       l10nID: getLocaleID("sidenav-chat-section-tooltip"),
-      icon: `chrome://${addon.data.config.addonRef}/content/icons/chat.png`,
+      icon: `chrome://${addon.data.config.addonRef}/content/icons/logo.png`,
     },
     onRender: ({ body }) => {
       const existingChat = body.querySelector('#zotero-chat-container');
@@ -39,14 +39,11 @@ export function registerSidebarIcon() {
           "min-height: 600px; padding: 10px; flex: 1; background-color:rgb(255, 255, 255) ; width: \
           100%; height: 90%; display: flex; flex-direction: column; overflow-y: auto; user-select: text; position: relative;";
 
-
-
         let textInput = body.querySelector('#zotero-chat-textinput') as HTMLTextAreaElement;
         if (!textInput) {
           textInput = Zotero.getMainWindow().document.createElement('textarea');
           textInput.id = "zotero-chat-textinput";
           textInput.style.cssText = `
-            bottom: 0;
             position: relative;
             font-family: Arial, sans-serif;
             font-size: 12px;
@@ -54,7 +51,9 @@ export function registerSidebarIcon() {
             width: 100%;
             height: 10%;
             resize: none;
-            border: 1.5px solid rgb(65, 67, 68);
+            border-top: 1.5px solid rgb(230, 230, 230);
+            border-left: none;
+            border-right: none;
             padding: 5px 40px 5px 10px;
             background-color: #f3f4f6;
             user-select: text;
@@ -64,10 +63,11 @@ export function registerSidebarIcon() {
             flex-direction: column;
             overflow-y: auto;
             max-height: 30px;
+            outline: none;
           `;
         }
 
-        textInput.addEventListener('keypress', (event) => {
+        textInput.addEventListener('keydown', (event) => {
           if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             sendMessage();
@@ -88,12 +88,11 @@ export function registerSidebarIcon() {
           if (message !== '') {
             const messageDiv = Zotero.getMainWindow().document.createElement('div');
             messageDiv.textContent = message;
-            textInput.innerHTML = '';
+            textInput.value = '';
             messageDiv.style.cssText =
               "font-family: Arial, sans-serif; font-size: 12px; color:rgb(0, 0, 0); \
               padding: 10px; margin-bottom: 10px; background-color: #eff6ff; border-radius: 4px; user-select: text;";
             chatContainer.appendChild(messageDiv);
-
             const responseDiv = Zotero.getMainWindow().document.createElement('div');
             responseDiv.style.cssText = `
               padding: 10px;
@@ -110,17 +109,19 @@ export function registerSidebarIcon() {
                 `;
             responseDiv.innerHTML = '等待回答中^_^...';
             chatContainer.appendChild(responseDiv);
-
             try {
           ztoolkit.log("已经发送用户输入内容：", message);
+              textInput.value = '';
           const result = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
           if (result && result.decoder) {
             const { response, decoder } = result;
             const responseText = extractStreamData(response);
             if (responseText === 'True') {
               ztoolkit.log("需要额外信息，重新发送数据");
+              textInput.value = '';
               const newResult = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
               if (newResult && newResult.decoder) {
+                textInput.value = '';
             const { response: newResponse, decoder: newDecoder } = newResult;
             const newResponseText = await extractStreamData(newResponse);
             ztoolkit.log("已发送数据，查看responseText", newResponseText);

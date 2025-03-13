@@ -1,6 +1,6 @@
 {
   "name": "zotero-science-gpt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Zotero Plugin for science gpt",
   "config": {
     "addonName": "zoteroScienceGPT",

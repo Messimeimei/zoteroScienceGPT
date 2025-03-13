@@ -200,11 +200,11 @@ export async function registerPDFListener(): Promise<void> {
         color: "rgb(37, 174, 238)",
         padding: "5px 15px",
         margin: "0 10px",
-        minWidth: "120px", // 添加最小宽度使按钮大小一致
+        minWidth: "100px", // 添加最小宽度使按钮大小一致
         fontSize: "14px",
         fontStyle: "bold",
         borderRadius: "14px",
-          border: "1px solid rgb(37, 174, 238)",
+        border: "1px solid rgb(37, 174, 238)",
         backgroundColor: "rgb(131, 204, 237)",
         cursor: "pointer",
         },
@@ -272,7 +272,7 @@ export async function registerPDFListener(): Promise<void> {
           color: "rgb(225, 81, 33)",
         padding: "5px 15px",
         margin: "0 10px",
-        minWidth: "120px", // 添加最小宽度使按钮大小一致
+        minWidth: "100px", // 添加最小宽度使按钮大小一致
         fontSize: "14px",
         borderRadius: "14px",
           border: "1px solid rgb(225, 81, 33)",
@@ -338,7 +338,7 @@ export async function registerPDFListener(): Promise<void> {
         styles: {
         padding: "5px 15px",
         margin: "0 10px",
-        minWidth: "120px", // 添加最小宽度使按钮大小一致
+        minWidth: "100px", // 添加最小宽度使按钮大小一致
         fontSize: "14px",
         borderRadius: "4px",
         border: "1px solid #ccc",
@@ -376,8 +376,229 @@ export async function registerPDFListener(): Promise<void> {
         },
         ],
       },
+        {
+          tag: "button",
+          attributes:
+          {
+            "data-previous-conversation": "",
+          },
+          properties: {
+            textContent: "↑ 上一条对话",
+          },
+          styles: {
+            color: "rgb(37, 174, 238)",
+            padding: "5px 15px",
+            margin: "0 10px",
+            minWidth: "100px", // 添加最小宽度使按钮大小一致
+            fontSize: "14px",
+            fontStyle: "bold",
+            borderRadius: "14px",
+            border: "1px solid rgb(37, 174, 238)",
+            backgroundColor: "rgb(131, 204, 237)",
+            cursor: "pointer",
+          },
+          listeners: [
+            {
+              type: "click",
+              listener: async () => {
+                const numbers = await getFilesNumber(Zotero.DataDirectory.dir + '\\' + 'PdfConversation');  // 获取已有文件序号
+                const resultDisplay = dialogHelper.window?.document.querySelector('[data-content-display]') as HTMLElement;
+                const nextButton = dialogHelper.window?.document.querySelector('[data-next-conversation]') as HTMLButtonElement;
+                const previousButton = dialogHelper.window?.document.querySelector('[data-previous-conversation]') as HTMLButtonElement;
+
+                nextButton.disabled = false;
+                nextButton.style.backgroundColor = "#f5f5f5";
+
+                if (numbers.length === 0) {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  return;
+                }
+
+                if (typeof id === 'undefined') {
+                  id = numbers.length - 1;
+                }
+
+                if (id >= 0) {
+                  const content = await getFileContent(id);  // 获取文件内容
+                  if (content) {
+                    try {
+                      if (ZoteroFileHandler.isMarkdown(content)) {
+                        resultDisplay.innerHTML = await marked.parse(content);
+                      } else {
+                        resultDisplay.textContent = content;
+                      }
+                    } catch (error) {
+                      resultDisplay.innerHTML = "<p style='color: red;'>无法显示内容，请检查 Markdown 格式。</p>";
+                      ztoolkit.log("Markdown 转换失败:", error);
+                    }
+                  } else {
+                    resultDisplay.textContent = "读取上轮对话内容失败";
+                  }
+                  id--;
+                  ztoolkit.log(`当前id: ${id}`);
+                }
+                else {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  id = 0;
+                }
+              },
+            },
+          ],
+        },
+
+        {
+          tag: "button",
+          attributes:
+          {
+            "data-previous-conversation": "",
+          },
+          properties: {
+            textContent: "↑ 上一条对话",
+          },
+          styles: {
+            color: "rgb(37, 174, 238)",
+            padding: "5px 15px",
+            margin: "0 10px",
+            minWidth: "100px", // 添加最小宽度使按钮大小一致
+            fontSize: "14px",
+            fontStyle: "bold",
+            borderRadius: "14px",
+            border: "1px solid rgb(37, 174, 238)",
+            backgroundColor: "rgb(131, 204, 237)",
+            cursor: "pointer",
+          },
+          listeners: [
+            {
+              type: "click",
+              listener: async () => {
+                const numbers = await getFilesNumber(Zotero.DataDirectory.dir + '\\' + 'PdfConversation');  // 获取已有文件序号
+                const resultDisplay = dialogHelper.window?.document.querySelector('[data-content-display]') as HTMLElement;
+                const nextButton = dialogHelper.window?.document.querySelector('[data-next-conversation]') as HTMLButtonElement;
+                const previousButton = dialogHelper.window?.document.querySelector('[data-previous-conversation]') as HTMLButtonElement;
+
+                nextButton.disabled = false;
+                nextButton.style.backgroundColor = "#f5f5f5";
+
+                if (numbers.length === 0) {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  return;
+                }
+
+                if (typeof id === 'undefined') {
+                  id = numbers.length - 1;
+                }
+
+                if (id >= 0) {
+                  const content = await getFileContent(id);  // 获取文件内容
+                  if (content) {
+                    try {
+                      if (ZoteroFileHandler.isMarkdown(content)) {
+                        resultDisplay.innerHTML = await marked.parse(content);
+                      } else {
+                        resultDisplay.textContent = content;
+                      }
+                    } catch (error) {
+                      resultDisplay.innerHTML = "<p style='color: red;'>无法显示内容，请检查 Markdown 格式。</p>";
+                      ztoolkit.log("Markdown 转换失败:", error);
+                    }
+                  } else {
+                    resultDisplay.textContent = "读取上轮对话内容失败";
+                  }
+                  id--;
+                  ztoolkit.log(`当前id: ${id}`);
+                }
+                else {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  id = 0;
+                }
+              },
+            },
+          ],
+        },
+        {
+          tag: "button",
+          attributes:
+          {
+            "data-previous-conversation": "",
+          },
+          properties: {
+            textContent: "上一条对话",
+          },
+          styles: {
+            color: "rgb(37, 174, 238)",
+            padding: "5px 15px",
+            margin: "0 10px",
+            minWidth: "100px", // 添加最小宽度使按钮大小一致
+            fontSize: "14px",
+            fontStyle: "bold",
+            borderRadius: "14px",
+            border: "1px solid rgb(37, 174, 238)",
+            backgroundColor: "rgb(131, 204, 237)",
+            cursor: "pointer",
+          },
+          listeners: [
+            {
+              type: "click",
+              listener: async () => {
+                const numbers = await getFilesNumber(Zotero.DataDirectory.dir + '\\' + 'PdfConversation');  // 获取已有文件序号
+                const resultDisplay = dialogHelper.window?.document.querySelector('[data-content-display]') as HTMLElement;
+                const nextButton = dialogHelper.window?.document.querySelector('[data-next-conversation]') as HTMLButtonElement;
+                const previousButton = dialogHelper.window?.document.querySelector('[data-previous-conversation]') as HTMLButtonElement;
+
+                nextButton.disabled = false;
+                nextButton.style.backgroundColor = "#f5f5f5";
+
+                if (numbers.length === 0) {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  return;
+                }
+
+                if (typeof id === 'undefined') {
+                  id = numbers.length - 1;
+                }
+
+                if (id >= 0) {
+                  const content = await getFileContent(id);  // 获取文件内容
+                  if (content) {
+                    try {
+                      if (ZoteroFileHandler.isMarkdown(content)) {
+                        resultDisplay.innerHTML = await marked.parse(content);
+                      } else {
+                        resultDisplay.textContent = content;
+                      }
+                    } catch (error) {
+                      resultDisplay.innerHTML = "<p style='color: red;'>无法显示内容，请检查 Markdown 格式。</p>";
+                      ztoolkit.log("Markdown 转换失败:", error);
+                    }
+                  } else {
+                    resultDisplay.textContent = "读取上轮对话内容失败";
+                  }
+                  id--;
+                  ztoolkit.log(`当前id: ${id}`);
+                }
+                else {
+                  resultDisplay.textContent = "无历史对话记录";
+                  previousButton.disabled = true;
+                  previousButton.style.backgroundColor = "#ccc";
+                  id = 0;
+                }
+              },
+            },
+          ],
+        },
       ],
     });
+
 
     dialogHelper.setDialogData(dialogData).open("", { fitContent: true, centerscreen: true, resizable: true});
     addon.data.dialog = dialogHelper;
