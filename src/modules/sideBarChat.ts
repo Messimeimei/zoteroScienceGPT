@@ -28,192 +28,126 @@ export function registerSidebarIcon() {
 
       const section = body.closest('[data-l10n-id="zotero-view-item"]') as HTMLElement;
       if (section) {
-        section.style.cssText = "width: 100%; --open-height: auto;";
+        section.style.cssText = "width: 100%; --open-height: auto; margin: 0; padding: 0;";
       }
 
       (body as HTMLElement).style.cssText =
-        "width: 100%; height: 100%; display: flex; flex-direction: column;";
+        "width: 100%; height: 100%; display: flex; flex-direction: column; margin: 0; padding: 0;";
+        const chatContainer = Zotero.getMainWindow().document.createElement('div');
+        chatContainer.id = "zotero-chat-container";
+        chatContainer.style.cssText =
+          "min-height: 600px; padding: 10px; flex: 1; background-color:rgb(255, 255, 255) ; width: \
+          100%; height: 90%; display: flex; flex-direction: column; overflow-y: auto; user-select: text; position: relative;";
 
-      const chatContainer = Zotero.getMainWindow().document.createElement('div');
-      chatContainer.id = "zotero-chat-container";
-      chatContainer.style.cssText =
-        "width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; userSelect:text;";
 
-      const chatContent = Zotero.getMainWindow().document.createElement('div');
-      chatContent.id = "chat-content";
-      chatContent.style.cssText =
-        "flex: 1; overflow-y: auto; padding: 10px; background-color: #232627; min-height: 600px; userSelect:text;";
 
-      const inputArea = Zotero.getMainWindow().document.createElement('div');
-      inputArea.style.cssText =
-        "background-color: #232627; flex-shrink: 0; display: flex; align-items: center; justify-content: center; userSelect:text; position: relative; height: 10%; bottom: 5%";
-
-      const inputWrapper = Zotero.getMainWindow().document.createElement('div');
-      inputWrapper.style.cssText = `
-        position: absolute;
-        bottom: 80%;
-        left: 2%;
-        right: 2%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 96%; /* 100% - 5% left - 5% right */
-        height: 30px;
-      `;
-
-      const textInput = Zotero.getMainWindow().document.createElement('textarea');
-      textInput.style.cssText = `
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-        color: #ffffff;
-        width: 80%;
-        height: 100%;
-        resize: none;
-        border: 3px solid rgb(65, 67, 68);
-        border-radius: 4px;
-        padding: 5px 40px 5px 10px;
-        background-color: #232627;
-        user-select: text;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 10px;
-      `;
-      const sendButton = Zotero.getMainWindow().document.createElement('div');
-      sendButton.innerHTML = '&#x27A4;';
-      sendButton.style.cssText = `
-        position: absolute;
-        top: 50%;
-        right: 6%;
-        transform: translateY(-50%);
-        width: 30px; // 调整宽度以适应图标
-        height: 30px; // 调整高度以适应图标
-        border: none;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 20px; // 调整字体大小以适应图标
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: transparent; // 确保背景透明
-        color: #808080; // 设置图标颜色为灰色
-        user-select: none; // 防止用户选择文本
-      `;
-
-      // 添加点击事件
-      sendButton.addEventListener('click', () => {
-        sendMessage(); // 调用发送消息的函数
-      });
-
-      const updateButtonState = () => {
-        if (textInput.value.trim() === '') {
-          sendButton.style.cursor = 'not-allowed';
-        } else {
-          sendButton.style.cursor = 'pointer';
+        let textInput = body.querySelector('#zotero-chat-textinput') as HTMLTextAreaElement;
+        if (!textInput) {
+          textInput = Zotero.getMainWindow().document.createElement('textarea');
+          textInput.id = "zotero-chat-textinput";
+          textInput.style.cssText = `
+            bottom: 0;
+            position: relative;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            color:rgb(0, 0, 0);
+            width: 100%;
+            height: 10%;
+            resize: none;
+            border: 1.5px solid rgb(65, 67, 68);
+            padding: 5px 40px 5px 10px;
+            background-color: #f3f4f6;
+            user-select: text;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            overflow-y: auto;
+            max-height: 30px;
+          `;
         }
-      };
 
-      textInput.addEventListener('input', updateButtonState);
-
-      let itemData: any = null;
-      let allItemData: any = null;
-      ZoteroFileHandler.getItemDataCallback = (itemDataReceived) => {
-        itemData = itemDataReceived; // 存储从 Zotero 获取的数据
-      };
-      ztoolkit.log('对话应用查看回调：', itemData);
-      ZoteroFileHandler.getAllItemDataCallback = (allItemDataReceived) => {
-        allItemData = allItemDataReceived;
-      }
-
-      // 主函数：整合发送和展示逻辑
-      const sendMessage = async () => {
-        const message = textInput.value.trim();
-        if (message !== '') {
-          // 展示用户发送的消息
-          const messageDiv = Zotero.getMainWindow().document.createElement('div');
-          messageDiv.textContent = message;
-          textInput.innerHTML = '';
-          messageDiv.style.cssText =
-            "font-family: Arial, sans-serif; font-size: 12px; color: #ffffff; padding: 10px; margin-bottom: 10px; background-color: #2b2f30; border-radius: 4px; user-select: text;";
-          chatContent.appendChild(messageDiv);
-          chatContent.scrollTop = chatContent.scrollHeight;
-
-          // 准备接收消息的展示容器
-          const responseDiv = Zotero.getMainWindow().document.createElement('div');
-          responseDiv.style.cssText = `
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #141718;
-            border-radius: 4px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-            font-family: Arial, sans-serif; font-size: 12px; color: #ffffff;
-            user-select:text;
-        `;
-          responseDiv.innerHTML = '等待回答中^_^...';
-          chatContent.appendChild(responseDiv);
-
-          // 获取完整数据并判断是否为 'True'
-          try {
-            ztoolkit.log("已经发送用户输入内容：", message)
-            const result = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
-            // 第一次发送数据得到回复
-            if (result && result.decoder) {
-              const { response, decoder } = result;
-              const responseText = extractStreamData(response);
-              // 返回True
-              if (responseText === 'True') {
-                ztoolkit.log("需要额外信息，重新发送数据");
-                // 发送带有额外信息的数据
-                const newResult = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
-                // 第二次发送数据得到回复
-                if (newResult && newResult.decoder) {
-                  const { response: newResponse, decoder: newDecoder } = result;
-                  const newResponseText = await extractStreamData(newResponse);
-                  ztoolkit.log("已发送数据，查看responseText", newResponseText);
-                  displayReceivedMessage(newResponse, newDecoder, chatContent, responseDiv);
-                } else { // 第二次发送数据没有回复
-                  ztoolkit.log('Error: No response or decoder.');
-                }
-
-              } else { // 返回不为True
-                ztoolkit.log("不需要额外信息，没有重新发送数据");
-                // 正常展示接收到的消息
-                displayReceivedMessage(response, decoder, chatContent, responseDiv);
-              }
-
-            } else { // 第一次发送数据没有回复
-              ztoolkit.log('Error: No response or decoder.');
-            }
-          } catch (error) {
-            ztoolkit.log('Error in sendMessage:', error);
+        textInput.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
           }
+        });
+
+        let itemData: any = null;
+        let allItemData: any = null;
+        ZoteroFileHandler.getItemDataCallback = (itemDataReceived) => {
+          itemData = itemDataReceived;
+        };
+        ZoteroFileHandler.getAllItemDataCallback = (allItemDataReceived) => {
+          allItemData = allItemDataReceived;
+        };
+
+        const sendMessage = async () => {
+          const message = textInput.value.trim();
+          if (message !== '') {
+            const messageDiv = Zotero.getMainWindow().document.createElement('div');
+            messageDiv.textContent = message;
+            textInput.innerHTML = '';
+            messageDiv.style.cssText =
+              "font-family: Arial, sans-serif; font-size: 12px; color:rgb(0, 0, 0); \
+              padding: 10px; margin-bottom: 10px; background-color: #eff6ff; border-radius: 4px; user-select: text;";
+            chatContainer.appendChild(messageDiv);
+
+            const responseDiv = Zotero.getMainWindow().document.createElement('div');
+            responseDiv.style.cssText = `
+              padding: 10px;
+              margin-bottom: 10px;
+              border-radius: 4px;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              overflow-wrap: anywhere;
+              font-family: Arial, sans-serif; 
+              font-size: 12px; 
+              color:rgb(0, 0, 0);
+              user-select: text;
+              justify-content: center;
+                `;
+            responseDiv.innerHTML = '等待回答中^_^...';
+            chatContainer.appendChild(responseDiv);
+
+            try {
+          ztoolkit.log("已经发送用户输入内容：", message);
+          const result = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
+          if (result && result.decoder) {
+            const { response, decoder } = result;
+            const responseText = extractStreamData(response);
+            if (responseText === 'True') {
+              ztoolkit.log("需要额外信息，重新发送数据");
+              const newResult = await sendMessageToWholeAspectUnderstandingAPI(message, itemData, allItemData);
+              if (newResult && newResult.decoder) {
+            const { response: newResponse, decoder: newDecoder } = newResult;
+            const newResponseText = await extractStreamData(newResponse);
+            ztoolkit.log("已发送数据，查看responseText", newResponseText);
+                displayReceivedMessage(newResponse, newDecoder, chatContainer, responseDiv);
+              } else {
+            ztoolkit.log('Error: No response or decoder.');
+              }
+            } else {
+              ztoolkit.log("不需要额外信息，没有重新发送数据");
+              displayReceivedMessage(response, decoder, chatContainer, responseDiv);
+            }
+          } else {
+            ztoolkit.log('Error: No response or decoder.');
+          }
+            } catch (error) {
+          ztoolkit.log('Error in sendMessage:', error);
+            }
+
+            textInput.value = '';
+          }
+        };
 
 
-          textInput.value = '';
-          updateButtonState();
-        }
-      };
-
-      sendButton.addEventListener('click', sendMessage);
-
-      textInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
-        }
-      });
-
-      inputWrapper.appendChild(textInput);
-      inputWrapper.appendChild(sendButton);
-      inputArea.appendChild(inputWrapper);
-      chatContainer.appendChild(chatContent);
-      chatContainer.appendChild(inputArea);
-      body.appendChild(chatContainer);
-    },
-  });
-
+        body.appendChild(chatContainer);
+        body.appendChild(textInput);
+      },
+    });
 }
 
 
@@ -281,9 +215,6 @@ export function displayReceivedMessage(reader: any, decoder: any, chatContent: a
 
       // 渲染 Markdown 内容到 HTML
       responseDiv.innerHTML = marked.parse(responseText);
-
-      // 自动滚动到最新消息
-      chatContent.scrollTop = chatContent.scrollHeight;
 
       currentIndex++;
     } else {
